@@ -3,6 +3,7 @@
 	"private": true,
 	"scripts": {
 		"build": "rollup -c",
+		"build:demo": "rollup -c --configDemo",
 		"typecheck": "tsc --noEmit -p . && tsc -p test",
 		"test": "node --test test/*.test.ts",
 		"watch": "rollup -c -w --watch.onEnd=\"streamdeck restart com.morgan-scruggs.audioswitcherplus-node\""

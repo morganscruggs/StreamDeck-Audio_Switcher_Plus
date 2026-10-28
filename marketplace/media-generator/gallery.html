@@ -7,11 +7,15 @@
      each slide is selected by URL hash (#1..#5, #icon). Key images are the plugin's own icons from
      shared/AudioDevicesIcons, recolored with a CSS mask the same way png-recolor.ts does (keep alpha, replace
      RGB). The settings panels are the real shared/propertyinspector/index.html, fed fake device data, so they
-     stay true to the plugin when the PI changes. Device names are generic Windows ones, not real products. -->
+     stay true to the plugin when the PI changes. Device names are generic Windows ones, not real products.
+     gallery.html?demo renders the demo version's listing instead: .demo-only/.full-only elements swap, every
+     slide gets a demo badge, the settings panels run as the demo, and the icon gets a DEMO ribbon. render.ps1
+     writes each listing's images into its own folder, alongside its description: marketplace/full/ and
+     marketplace/demo/. -->
 <style>
   :root {
     --bg1: #1b1e25; --bg2: #0e1014;
-    --ink: #f4f5f7; --muted: #9aa0ab; --accent: #7c5cff; --dim: #606060;
+    --ink: #f4f5f7; --muted: #9aa0ab; --accent: #7c5cff; --dim: #606060; --red: #ff3b30;
     --panel: #24262c;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -69,6 +73,22 @@
   .appicon .glyph { inset: auto; }
   .appicon svg { position: absolute; inset: 0; width: 100%; height: 100%; }
   #sicon { padding: 0; background: none; }
+
+  /* ---- Demo version (gallery.html?demo), styled like Multi Volume Controller's demo listing ---- */
+  body:not(.demo) .demo-only, body.demo .full-only { display: none !important; }
+  .demo-badge { position: absolute; top: 40px; right: 48px; z-index: 5; display: flex; align-items: center; gap: 12px;
+    padding: 10px 22px 10px 14px; border: 2px solid var(--red); border-radius: 999px; background: rgba(255,59,48,.14);
+    color: #ff4d4d; font-size: 22px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+  .demo-badge svg { width: 30px; height: 30px; flex: none; }
+  .demo-title { color: #ff4d4d; }
+  /* A red "DEMO" ribbon across the icon's bottom-right corner, like Multi Volume Controller's demo icon
+     (scripts/demo-badge.ps1 there), edged near-black. Its inner edge sits where that ribbon's does (11% thick,
+     centre line 17% in from the corner); it's thickened outward, toward the corner, to fit the largest text
+     that still clears the corner's edges, and then a further 5.85px on that side, with matching bottom padding
+     so the text stays put, to give the text the same space below as above (measured on a 4x render). */
+  .ribbon { position: absolute; left: 34.42%; top: 76.90%; width: 100%; height: 15.03%; padding-bottom: 5.85px;
+    transform: rotate(-45deg); background: var(--red); border: 3.5px solid #14161c; display: grid; place-items: center;
+    color: #fff; font-size: 32px; font-weight: 700; line-height: 1; }
 </style>
 </head>
 <body>
@@ -78,6 +98,8 @@
     <!-- Stand-in for Stream Deck's own showAlert() warning triangle. -->
     <symbol id="alert" viewBox="0 0 100 100"><path d="M50 8 L95 88 H5 Z" fill="#f5c400" stroke="#f5c400" stroke-width="8" stroke-linejoin="round"/><rect x="45" y="36" width="10" height="30" rx="4" fill="#000"/><circle cx="50" cy="76" r="5.5" fill="#000"/></symbol>
     <symbol id="arrow" viewBox="0 0 150 60"><path d="M10 30 H128" stroke="#7c5cff" stroke-width="6" stroke-linecap="round"/><path d="M118 16 L138 30 L118 44" fill="none" stroke="#7c5cff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <!-- The demo badge's icon, the same as Multi Volume Controller's. -->
+    <symbol id="demo-alert" viewBox="0 0 16 16"><circle cx="8" cy="8" r="8" fill="#ff3b30"/><rect x="7" y="3.5" width="2" height="6" rx="1" fill="#fff"/><circle cx="8" cy="12" r="1.1" fill="#fff"/></symbol>
   </defs>
 </svg>
 
@@ -101,15 +123,19 @@
   <div style="display:flex; align-items:center; gap:36px;">
     <div data-appicon style="width:120px; height:120px; border-radius:24px;"></div>
     <div>
-      <h1 style="font-size:68px;">Audio Switcher Plus</h1>
-      <p class="lead" style="margin-top:10px; font-size:30px;">Switch your Windows output and input devices with one key press. Every key shows which one is active.</p>
+      <h1 style="font-size:68px;">Audio Switcher Plus<span class="demo-only demo-title"> (Demo)</span></h1>
+      <p class="lead full-only" style="margin-top:10px; font-size:30px;">Switch your Windows output and input devices with one key press. Every key shows which one is active.</p>
+      <p class="lead demo-only" style="margin-top:10px; font-size:30px;">Switch between two outputs and two inputs with one key press. Every key shows which one is active.</p>
     </div>
   </div>
   <!-- Input card, deck and output card, centred and level (all three are 400px tall). The deck's top row is the
-       input devices, the bottom row the outputs; each connector leaves its key's outer edge straight to its card. -->
+       input devices, the bottom row the outputs; each connector leaves its key's outer edge straight to its card.
+       The demo's deck has its one icon per direction (mic, speaker): Set keys for its two devices each way, plus a
+       Toggle between them. -->
   <div style="position:relative; width:1700px; height:540px;">
     <div class="sound" style="position:absolute; left:0; top:70px; width:480px;" data-title="Sound input" data-sound='[["mic","Microphone","USB Microphone",1],["headphones","Headphones","Gaming Headset"],["Earbuds","Earbuds","Bluetooth Audio"]]'></div>
-    <div class="deck" style="--cols:3; --k:140px; position:absolute; left:562px; top:70px;" data-keys='[["mic","#ffaaff","hl"],["headphones","#606060"],["Earbuds","#606060"],["speaker","#606060"],["headphones","#606060"],["Earbuds","#55ff7f","hl"]]'></div>
+    <div class="deck full-only" style="--cols:3; --k:140px; position:absolute; left:562px; top:70px;" data-keys='[["mic","#ffaaff","hl"],["headphones","#606060"],["Earbuds","#606060"],["speaker","#606060"],["headphones","#606060"],["Earbuds","#55ff7f","hl"]]'></div>
+    <div class="deck demo-only" style="--cols:3; --k:140px; position:absolute; left:562px; top:70px;" data-keys='[["mic","#ffaaff","hl"],["mic","#606060"],["mic"],["speaker"],["speaker","#606060"],["speaker","#55ff7f","hl"]]'></div>
     <svg style="position:absolute; inset:0; overflow:visible;" width="1700" height="540">
       <g fill="none" stroke="#7c5cff" stroke-width="5" stroke-linecap="round">
         <path d="M595 216 H480"/>
@@ -126,12 +152,15 @@
 <section class="slide" id="s2" style="flex-direction:column; align-items:center; justify-content:center;">
   <span class="tag">Toggle Audio Device</span>
   <h2 style="text-align:center;">One key, two devices</h2>
-  <p class="lead" style="text-align:center; margin-top:14px;">Press to flip between headphones and speakers. The key shows which one is playing.</p>
+  <p class="lead full-only" style="text-align:center; margin-top:14px;">Press to flip between headphones and speakers. The key shows which one is playing.</p>
+  <p class="lead demo-only" style="text-align:center; margin-top:14px;">Press to flip between your two devices. The icon dims while the second one is playing.</p>
   <div style="display:flex; gap:44px; align-items:center; margin-top:64px;">
     <div class="sound" style="width:360px;" data-sound='[["headphones","Headphones","",1],["speaker","Speakers",""]]'></div>
-    <div class="deck" style="--cols:1; --k:170px;" data-keys='[["headphones"]]'></div>
+    <div class="deck full-only" style="--cols:1; --k:170px;" data-keys='[["headphones"]]'></div>
+    <div class="deck demo-only" style="--cols:1; --k:170px;" data-keys='[["speaker"]]'></div>
     <div class="press"><svg><use href="#arrow"/></svg>Press<svg style="transform:scaleX(-1)"><use href="#arrow"/></svg></div>
-    <div class="deck" style="--cols:1; --k:170px;" data-keys='[["speaker"]]'></div>
+    <div class="deck full-only" style="--cols:1; --k:170px;" data-keys='[["speaker"]]'></div>
+    <div class="deck demo-only" style="--cols:1; --k:170px;" data-keys='[["speaker","#606060"]]'></div>
     <div class="sound" style="width:360px;" data-sound='[["headphones","Headphones",""],["speaker","Speakers","",1]]'></div>
   </div>
 </section>
@@ -142,7 +171,8 @@
   <h2 style="text-align:center;">Know what's active at a glance</h2>
   <p class="lead" style="text-align:center; margin-top:14px;">Keys update the moment the device changes, even when you switch it in Windows.</p>
   <div style="display:flex; gap:70px; margin-top:64px;">
-    <div><div class="deck" style="--cols:1; --k:190px;" data-keys='[["headphones"]]'></div><div class="cap">Active</div></div>
+    <div class="full-only"><div class="deck" style="--cols:1; --k:190px;" data-keys='[["headphones"]]'></div><div class="cap">Active</div></div>
+    <div class="demo-only"><div class="deck" style="--cols:1; --k:190px;" data-keys='[["speaker"]]'></div><div class="cap">Active</div></div>
     <div><div class="deck" style="--cols:1; --k:190px;" data-keys='[["speaker","#606060"]]'></div><div class="cap">Not active</div></div>
     <div><div class="deck" style="--cols:1; --k:190px;" data-keys='[["mic"]]'></div><div class="cap">Microphones too</div></div>
     <div><div class="deck" style="--cols:1; --k:190px;" data-keys='[["Earbuds","#606060","alert"]]'></div><div class="cap">Pressed while unplugged</div></div>
@@ -151,14 +181,21 @@
 
 <!-- 4. Settings: Device and Behavior sections of the real property inspector -->
 <section class="slide" id="s4" style="align-items:center; gap:90px;">
-  <div class="pi" data-pi='{"action":"toggle","sections":[0,1],"settings":{"direction":"output","role":"all","matchStrategy":"Fuzzy","primary":"out-hp","secondary":"out-spk","hideUnavailable":true,"hideDeviceType":false}}'></div>
+  <div class="pi full-only" data-pi='{"action":"toggle","sections":[0,1],"settings":{"direction":"output","role":"all","matchStrategy":"Fuzzy","primary":"out-hp","secondary":"out-spk","hideUnavailable":true,"hideDeviceType":false}}'></div>
+  <div class="pi demo-only" data-pi='{"action":"toggle","sections":[0,1],"settings":{"direction":"output","role":"default","matchStrategy":"Fuzzy","primary":"out-hp","secondary":"out-spk","hideUnavailable":true,"hideDeviceType":false}}'></div>
   <div class="col">
     <span class="tag">Settings</span>
     <h2>Set it up in seconds</h2>
-    <div class="callouts" style="margin-top:44px;">
+    <div class="callouts full-only" style="margin-top:44px;">
       <div class="callout"><div class="n">1</div><div><h3>Pick your devices</h3><p>Choose from your connected devices. Unplugged and disabled ones can be hidden.</p></div></div>
       <div class="callout"><div class="n">2</div><div><h3>Output or input</h3><p>Switch speakers and headphones, or microphones.</p></div></div>
       <div class="callout"><div class="n">3</div><div><h3>Choose the role</h3><p>Default, Communications for calling apps, or All for both.</p></div></div>
+      <div class="callout"><div class="n">4</div><div><h3>Follows your devices</h3><p>Fuzzy matching finds a device again after Windows renumbers it.</p></div></div>
+    </div>
+    <div class="callouts demo-only" style="margin-top:44px;">
+      <div class="callout"><div class="n">1</div><div><h3>Pick your devices</h3><p>Two outputs and two inputs of your choice. Pick another any time; the old one frees up.</p></div></div>
+      <div class="callout"><div class="n">2</div><div><h3>Output or input</h3><p>Switch speakers and headphones, or microphones.</p></div></div>
+      <div class="callout"><div class="n">3</div><div><h3>Choose the role</h3><p>Default, or Communications for calling apps. The All role needs the full version.</p></div></div>
       <div class="callout"><div class="n">4</div><div><h3>Follows your devices</h3><p>Fuzzy matching finds a device again after Windows renumbers it.</p></div></div>
     </div>
   </div>
@@ -166,13 +203,18 @@
 
 <!-- 5. Icons & colors: Icon appearance section of the real property inspector -->
 <section class="slide" id="s5" style="flex-direction:column; align-items:center; justify-content:center;">
-  <span class="tag">Icons &amp; colors</span>
-  <h2 style="text-align:center;">Make every key yours</h2>
-  <p class="lead" style="text-align:center; margin-top:14px;">Pick an icon for each device and color it. Set keys get their own On and Off colors.</p>
+  <span class="tag full-only">Icons &amp; colors</span>
+  <span class="tag demo-only">Colors</span>
+  <h2 class="full-only" style="text-align:center;">Make every key yours</h2>
+  <h2 class="demo-only" style="text-align:center;">Color every key</h2>
+  <p class="lead full-only" style="text-align:center; margin-top:14px;">Pick an icon for each device and color it. Set keys get their own On and Off colors.</p>
+  <p class="lead demo-only" style="text-align:center; margin-top:14px;">Pick On and Off colors for the speaker and mic icons. The full version adds headphones and earbuds icons.</p>
   <div style="display:flex; gap:70px; align-items:center; margin-top:56px;">
-    <div class="pi" data-pi='{"action":"set","sections":[2],"settings":{"direction":"output","role":"all","matchStrategy":"Fuzzy","primary":"out-hp","icon":"headphones","iconBrightColor":"#4cc9f0","iconDarkColor":"#2a4752","hideUnavailable":true,"hideDeviceType":false}}'></div>
+    <div class="pi full-only" data-pi='{"action":"set","sections":[2],"settings":{"direction":"output","role":"all","matchStrategy":"Fuzzy","primary":"out-hp","icon":"headphones","iconBrightColor":"#4cc9f0","iconDarkColor":"#2a4752","hideUnavailable":true,"hideDeviceType":false}}'></div>
+    <div class="pi demo-only" data-pi='{"action":"set","sections":[2],"settings":{"direction":"output","role":"default","matchStrategy":"ID","primary":"out-spk","icon":"speaker","iconBrightColor":"#3ddc84","iconDarkColor":"#2a4752","hideUnavailable":true,"hideDeviceType":false}}'></div>
     <div style="font-size:64px; color:var(--muted);">→</div>
-    <div class="deck" style="--cols:3; --k:140px;" data-keys='[["headphones","#4cc9f0"],["speaker","#ff9f43"],["Earbuds","#3ddc84"],["headphones","#2a4752"],["mic","#ff6b9a"],["mic","#b388ff"]]'></div>
+    <div class="deck full-only" style="--cols:3; --k:140px;" data-keys='[["headphones","#4cc9f0"],["speaker","#ff9f43"],["Earbuds","#3ddc84"],["headphones","#2a4752"],["mic","#ff6b9a"],["mic","#b388ff"]]'></div>
+    <div class="deck demo-only" style="--cols:3; --k:140px;" data-keys='[["speaker","#3ddc84"],["speaker","#4cc9f0"],["mic","#ff9f43"],["speaker","#2a4752"],["mic","#ff6b9a"],["mic","#b388ff"]]'></div>
   </div>
 </section>
 
@@ -180,6 +222,11 @@
 <section class="slide" id="sicon"><div data-appicon style="width:288px; height:288px;"></div></section>
 
 <script>
+  // The demo version's listing: swaps .demo-only/.full-only content (see the CSS), badges every slide, runs the
+  // settings panels as the demo, and marks the icon.
+  const DEMO = new URLSearchParams(location.search).has("demo");
+  if (DEMO) document.body.classList.add("demo");
+
   const ICONS = "../../shared/AudioDevicesIcons/";
   const PI = "../../shared/propertyinspector/index.html";
   const icon = (id) => `url(${ICONS}${id}.png)`;
@@ -191,14 +238,14 @@
   });
 
   // [icon, color, flag]: an empty color keeps the icon's own white, as the plugin does; "hl" rings the key;
-  // "alert" shows the warning triangle in place of the image, as Stream Deck's showAlert() does.
+  // "alert" shows the warning triangle in place of the image, as Stream Deck's showAlert() does. An empty icon
+  // is an unused key.
   document.querySelectorAll(".deck[data-keys]").forEach((deck) => {
     for (const [id, color, flag] of JSON.parse(deck.dataset.keys)) {
       const key = document.createElement("div");
       key.className = "key" + (flag === "hl" ? " hl" : "");
-      key.innerHTML = flag === "alert"
-        ? `<svg class="alert"><use href="#alert"/></svg>`
-        : `<i style="--icon:${icon(id)}; ${color ? `background:${color}` : ""}"></i>`;
+      if (flag === "alert") key.innerHTML = `<svg class="alert"><use href="#alert"/></svg>`;
+      else if (id) key.innerHTML = `<i style="--icon:${icon(id)}; ${color ? `background:${color}` : ""}"></i>`;
       deck.appendChild(key);
     }
   });
@@ -212,6 +259,9 @@
 
   // ---- Property inspector: the real one, talking to a fake Stream Deck socket ----
   const PI_WIDTH = 380, PI_ZOOM = 2.05;
+  // The demo is the same panel under the demo plugin's UUID, with its two devices already picked.
+  const PLUGIN_UUID = DEMO ? "com.morgan-scruggs.audioswitcherplus-node-demo" : "com.morgan-scruggs.audioswitcherplus-node";
+  const GLOBAL_SETTINGS = DEMO ? { demoDevices: ["out-hp", "out-spk"], demoInputDevices: ["in-mic", "in-hs"] } : {};
   const dev = (id, direction, endpointName, interfaceName, state = "connected") =>
     [id, { id, direction, endpointName, interfaceName, displayName: `${endpointName} (${interfaceName})`, state }];
   const OUTPUTS = Object.fromEntries([
@@ -231,7 +281,7 @@
       send(text) {
         const msg = JSON.parse(text);
         const reply = (event, payload) => setTimeout(() => sock.onmessage({ data: JSON.stringify({ event, payload }) }));
-        if (msg.event === "getGlobalSettings") reply("didReceiveGlobalSettings", { settings: {} });
+        if (msg.event === "getGlobalSettings") reply("didReceiveGlobalSettings", { settings: GLOBAL_SETTINGS });
         if (msg.event !== "sendToPlugin") return;
         if (msg.payload.event === "getIconList") reply("sendToPropertyInspector", { event: "getIconList", icons: ICON_LIST });
         if (msg.payload.event === "getDeviceList") reply("sendToPropertyInspector", { event: "getDeviceList", inputDevices: INPUTS, outputDevices: OUTPUTS });
@@ -242,6 +292,7 @@
   }
 
   document.querySelectorAll(".pi[data-pi]").forEach((box) => {
+    if (box.classList.contains(DEMO ? "full-only" : "demo-only")) return;
     const cfg = JSON.parse(box.dataset.pi);
     const devices = cfg.settings.direction === "input" ? INPUTS : OUTPUTS;
     for (const k of ["primary", "secondary"]) if (cfg.settings[k]) cfg.settings[k] = devices[cfg.settings[k]];
@@ -255,8 +306,8 @@
       const win = frame.contentWindow, doc = frame.contentDocument;
       win.WebSocket = function () { return fakeSocket(win); };
       win.connectElgatoStreamDeckSocket(0, "pi", "registerPropertyInspector",
-        JSON.stringify({ plugin: { uuid: "com.morgan-scruggs.audioswitcherplus-node", version: "" } }),
-        JSON.stringify({ action: `com.morgan-scruggs.audioswitcherplus-node.${cfg.action}`, payload: { settings: cfg.settings } }));
+        JSON.stringify({ plugin: { uuid: PLUGIN_UUID, version: "" } }),
+        JSON.stringify({ action: `${PLUGIN_UUID}.${cfg.action}`, payload: { settings: cfg.settings } }));
       // Show only the sections this slide is about.
       doc.querySelectorAll("#mainWrapper > details").forEach((d, i) => { if (!cfg.sections.includes(i)) d.style.display = "none"; });
       doc.querySelector(".help-toggle").style.display = "none";
@@ -269,6 +320,12 @@
       }, 50);
     };
   });
+
+  if (DEMO) {
+    document.querySelectorAll(".slide:not(#sicon)").forEach((slide) =>
+      slide.insertAdjacentHTML("beforeend", `<div class="demo-badge"><svg><use href="#demo-alert"/></svg>Demo · 2 outputs &amp; 2 inputs</div>`));
+    document.querySelector("#sicon .appicon").insertAdjacentHTML("beforeend", `<div class="ribbon">DEMO</div>`);
+  }
 
   const n = location.hash.slice(1) || "1";
   document.getElementById("s" + n).classList.add("on");

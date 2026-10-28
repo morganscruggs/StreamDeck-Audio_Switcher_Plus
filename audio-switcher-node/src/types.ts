@@ -49,4 +49,6 @@ export type ButtonSettings = {
 	secondaryIcon?: string;
 	primaryIconColor?: string;
 	secondaryIconColor?: string;
+	// Demo only: the demo's reset count when the key was last set up - see applyDemoLimits() in edition.ts.
+	demoReset?: number;
 };

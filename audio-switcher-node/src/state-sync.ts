@@ -2,6 +2,7 @@ import type { KeyAction } from "@elgato/streamdeck";
 import streamDeck from "@elgato/streamdeck";
 import { getVolatileDeviceId } from "./device-match";
 import { audioDeviceService } from "./audio-device-service";
+import { isDeviceAllowed } from "./edition";
 import type { AudioSnapshot, ButtonSettings, DirectionSnapshot } from "./types";
 
 export type ActionKind = "set" | "toggle";
@@ -153,8 +154,17 @@ async function switchDevice(action: KeyAction<ButtonSettings>, kind: ActionKind,
 	const snapshot = audioDeviceService.getSnapshot();
 	const dirSnap = directionSnapshot(snapshot, settings.direction);
 
-	const deviceId = state !== 0 || kind === "set" ? resolvePrimaryId(settings, snapshot) : resolveSecondaryId(settings, snapshot);
+	const targetsPrimary = state !== 0 || kind === "set";
+	const deviceId = targetsPrimary ? resolvePrimaryId(settings, snapshot) : resolveSecondaryId(settings, snapshot);
 	if (!deviceId) {
+		await action.showAlert().catch(() => undefined);
+		return;
+	}
+
+	// The demo only switches to the devices picked for it; performKeyPress re-resolves the key's state. Checked
+	// by the device as picked rather than as resolved, since fuzzy matching may find it again under a new ID.
+	const pickedId = (targetsPrimary ? settings.primary : settings.secondary)?.id ?? deviceId;
+	if (!isDeviceAllowed(pickedId, settings.direction)) {
 		await action.showAlert().catch(() => undefined);
 		return;
 	}

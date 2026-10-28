@@ -76,6 +76,23 @@
     }
     .seg label:last-child { border-right: 0; }
     .seg input:checked + label { background: #46617f; color: #eaf2fb; }
+    /* The demo's locked choices stay visible, in the demo notes' red, so it's clear what the full version adds. */
+    .seg input:disabled + label { color: #ff4d4d; cursor: not-allowed; }
+    /* In the device lists, the demo's un-selectable devices are a dark grey-red, so its reset option, in the
+       demo notes' red, stands out from them. */
+    select option:disabled { color: #8a5250; }
+    select option.demo-reset { color: #ff4d4d; }
+    select option.separator { color: var(--muted); }
+
+    /* The demo's notes, styled like Multi Volume Controller's demo limit note (.app-limit-note there). */
+    .demo-note {
+      display: flex; align-items: flex-start; gap: 6px; padding: 6px 8px;
+      border: 1px solid #ff3b30; border-radius: 4px; background: rgba(255, 59, 48, 0.12);
+      color: #ff4d4d; font-size: 11px; font-weight: 600; line-height: 1.35;
+    }
+    .demo-note svg { flex: none; margin-top: 1px; }
+    .demo-note button.link, .demo-note a { color: #ff4d4d; font-size: inherit; font-weight: inherit; }
+    #demoBanner { margin-bottom: 6px; }
 
     .check { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 3px; }
     .check input { accent-color: var(--accent); margin-top: 2px; }
@@ -126,6 +143,8 @@
     }
     .grid button:hover { background: #1c1c23; border-color: #4d4d5a; }
     .grid button.on { border-color: var(--accent); background: #1e2033; }
+    /* The demo's locked icons: shown, but outlined in the demo notes' red and not selectable. */
+    .grid button.locked, .grid button.locked:hover { border-color: #ff3b30; background: #131318; cursor: not-allowed; }
     .grid button img { width: 30px; height: 30px; display: block; object-fit: contain; }
 
     footer {
@@ -137,7 +156,21 @@
 </head>
 
 <body>
+  <!-- The demo notes' alert icon, the same as Multi Volume Controller's. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="demoAlert" viewBox="0 0 16 16">
+      <circle cx="8" cy="8" r="8" fill="#ff3b30" />
+      <rect x="7" y="3.5" width="2" height="6" rx="1" fill="#fff" />
+      <circle cx="8" cy="12" r="1.1" fill="#fff" />
+    </symbol>
+  </svg>
+
   <div class="hidden" id="mainWrapper">
+
+    <div class="demo-note hidden" id="demoBanner" role="note">
+      <svg width="14" height="14" aria-hidden="true"><use href="#demoAlert" /></svg>
+      <div><b>Demo version</b> - switches between 2 output devices and 2 input devices of your choice. The <a href="#" onclick="openFullVersion(event);">full version</a> adds every device, the All role, and all icons.</div>
+    </div>
 
     <details open>
       <summary id="devicesSummary">Device</summary>
@@ -157,7 +190,7 @@
         <div class="row">
           <label id="primaryDeviceLabel" for="primaryDevice">Device</label>
           <div class="ctl">
-            <select id="primaryDevice" onchange="saveSettings();"></select>
+            <select id="primaryDevice" onchange="onDeviceSelected(this);"></select>
           </div>
         </div>
 
@@ -165,7 +198,7 @@
           <div class="row">
             <label for="secondaryDevice">Secondary</label>
             <div class="ctl">
-              <select id="secondaryDevice" onchange="saveSettings();"></select>
+              <select id="secondaryDevice" onchange="onDeviceSelected(this);"></select>
             </div>
           </div>
         </div>
@@ -270,6 +303,7 @@
       <label for="showHelp">Show help text</label>
     </div>
 
+
     <footer>
       <span id="version"></span>
       <em><span id="pluginName">Audio Switcher Plus</span> by Morgan Scruggs · based on Fred Emmott's Audio Switcher</em>
@@ -284,6 +318,7 @@
       piUUID,
       actionInfo,
       isSetAction,
+      isDemo,
       inputDevices,
       outputDevices,
       availableIcons,
@@ -328,6 +363,19 @@
         secondarySelector.removeChild(secondarySelector.firstChild);
       }
 
+      // The demo saves no device until one is picked, so just opening a button doesn't use up one of
+      // its two.
+      if (isDemo) {
+        const primaryPlaceholder = document.createElement("option");
+        primaryPlaceholder.setAttribute("value", "");
+        primaryPlaceholder.setAttribute("label", "Choose a device…");
+        const secondaryPlaceholder = primaryPlaceholder.cloneNode();
+        if (!primaryId) primaryPlaceholder.setAttribute("selected", true);
+        if (!secondaryId) secondaryPlaceholder.setAttribute("selected", true);
+        primarySelector.appendChild(primaryPlaceholder);
+        secondarySelector.appendChild(secondaryPlaceholder);
+      }
+
       const sortedIds = Object.keys(devices).sort((a_id, b_id) => {
         const a = devices[a_id];
         const b = devices[b_id];
@@ -357,11 +405,17 @@
           "device_not_present": " (not present)",
           "device_disabled": " (disabled)"
         }[device.state];
-
-        const primaryOption = document.createElement("option");
-        primaryOption.setAttribute("value", deviceId);
-        primaryOption.setAttribute("label", displayName);
-        const secondaryOption = primaryOption.cloneNode();
+        // Locked per select: switching one select away from its device can free a slot the other can't.
+        const makeOption = (slot) => {
+          const option = document.createElement("option");
+          const locked = isDemoLocked(deviceId, direction, slot);
+          option.setAttribute("value", deviceId);
+          option.setAttribute("label", locked ? `${displayName} - full version` : displayName);
+          if (locked) option.setAttribute("disabled", true);
+          return option;
+        };
+        const primaryOption = makeOption('primary');
+        const secondaryOption = makeOption('secondary');
 
         if (isPrimary) primaryOption.setAttribute("selected", true);
         if (isSecondary) secondaryOption.setAttribute("selected", true);
@@ -389,6 +443,173 @@
         cloned.removeAttribute('selected');
         primarySelector.appendChild(cloned);
       }
+      // The demo's reset, at the bottom of both lists (see resetDemoDevices).
+      if (isDemo) {
+        for (const selector of [primarySelector, secondarySelector]) {
+          const separator = document.createElement("option");
+          separator.className = "separator";
+          separator.disabled = true;
+          separator.setAttribute("label", "──────────");
+          const reset = document.createElement("option");
+          reset.className = "demo-reset";
+          reset.value = DEMO_RESET;
+          reset.setAttribute("label", "Reset all device selections");
+          selector.append(separator, reset);
+        }
+      }
+    }
+
+    // A device select changed: the demo's reset option resets, any other choice is saved.
+    function onDeviceSelected(select) {
+      if (select.value === DEMO_RESET) {
+        resetDemoDevices();
+        return;
+      }
+      saveSettings();
+      claimDemoDevices();
+    }
+
+    // The full version's Marketplace page, linked from the demo's note. The property inspector can't open a
+    // page itself, so it asks Stream Deck to open it in the browser.
+    const FULL_VERSION_URL = "https://marketplace.elgato.com/product/audio-switcher-plus-78785833-a69e-4d6b-93df-e553707ecc8a";
+
+    function openFullVersion(event) {
+      event.preventDefault();
+      send("openUrl", { url: FULL_VERSION_URL });
+    }
+
+    // The demo's devices: 2 in each direction (2 outputs and 2 inputs), shared by all of its buttons. They're
+    // kept in the global settings - "demoDevices" for the outputs (named from when the demo was output-only)
+    // and "demoInputDevices" - where the plugin checks them before switching. "demoDeviceUsers" records which
+    // devices each button uses, keyed by the button's demoKeyId, so picking a different device frees the old one
+    // as soon as no button uses it. The one thing that can't free a device is deleting its button, which Stream
+    // Deck doesn't report - "Reset all device selections" (resetDemoDevices) is there for that.
+    const DEMO_DEVICE_LIMIT = 2;
+    const DEMO_KEY_PREFIX = 'key-';
+
+    // This button's ID for that record, kept in its own settings - rather than its Stream Deck context, which
+    // isn't guaranteed to stay the same between sessions, and would leave a stale entry holding its devices.
+    function demoKeyId() {
+      if (!settings.demoKeyId) {
+        settings.demoKeyId = DEMO_KEY_PREFIX + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      }
+      return settings.demoKeyId;
+    }
+
+    // The record, without entries from before buttons had a demoKeyId (keyed by context, so possibly stale).
+    function demoDeviceUsers() {
+      const users = globalSettings.demoDeviceUsers;
+      if (!users || typeof users !== 'object') return {};
+      return Object.fromEntries(Object.entries(users).filter(([key, ids]) => key.startsWith(DEMO_KEY_PREFIX) && Array.isArray(ids)));
+    }
+
+    // The devices in use by every other button and, unless it's the select being changed, this button's other.
+    function devicesInUse(changingSlot) {
+      const inUse = new Set();
+      for (const [key, ids] of Object.entries(demoDeviceUsers())) {
+        if (key !== demoKeyId()) ids.forEach(id => inUse.add(id));
+      }
+      for (const slot of isSetAction ? ['primary'] : ['primary', 'secondary']) {
+        const device = settings[slot];
+        const id = (typeof device == 'object' && device) ? device.id : device;
+        if (slot !== changingSlot && id) inUse.add(id);
+      }
+      return inUse;
+    }
+
+    function currentDirection() {
+      return document.getElementById('input').checked ? 'input' : 'output';
+    }
+
+    function currentDevices() {
+      return currentDirection() === 'input' ? inputDevices : outputDevices;
+    }
+
+    function demoDevicesKey(direction) {
+      return direction === 'input' ? 'demoInputDevices' : 'demoDevices';
+    }
+
+    function demoDevices(direction) {
+      const list = globalSettings[demoDevicesKey(direction)];
+      return Array.isArray(list) ? list : [];
+    }
+
+    // Whether a select can't switch to the device: the direction's slots are full with devices that stay in use
+    // even if this select switches away (so doing so frees nothing), and it isn't one of them.
+    function isDemoLocked(deviceId, direction, slot) {
+      if (!isDemo) return false;
+      const inUse = devicesInUse(slot);
+      const kept = demoDevices(direction).filter(id => inUse.has(id));
+      return kept.length >= DEMO_DEVICE_LIMIT && !kept.includes(deviceId);
+    }
+
+    // Records this button's devices, frees the demo's devices no button uses any more (in either direction,
+    // since a button may just have switched direction), then claims this button's while there's room.
+    function claimDemoDevices() {
+      const devices = currentDevices();
+      if (!isDemo || !globalSettingsLoaded || !devices) return;
+      const mine = [document.getElementById('primaryDevice').value];
+      if (!isSetAction) mine.push(document.getElementById('secondaryDevice').value);
+      const myIds = mine.filter(Boolean);
+
+      const users = demoDeviceUsers();
+      if (myIds.length) users[demoKeyId()] = myIds;
+      else delete users[demoKeyId()];
+      const inUse = new Set(Object.values(users).flat());
+      let changed = JSON.stringify(users) !== JSON.stringify(globalSettings.demoDeviceUsers || {});
+
+      for (const direction of ['output', 'input']) {
+        const claimed = demoDevices(direction).filter(id => inUse.has(id));
+        if (direction === currentDirection()) {
+          for (const id of myIds) {
+            if (!claimed.includes(id) && claimed.length < DEMO_DEVICE_LIMIT) claimed.push(id);
+          }
+        }
+        if (claimed.join() !== demoDevices(direction).join()) {
+          globalSettings[demoDevicesKey(direction)] = claimed;
+          changed = true;
+        }
+      }
+      if (!changed) return;
+      globalSettings.demoDeviceUsers = users;
+      send("setGlobalSettings", globalSettings);
+      updateDeviceLists(devices);
+    }
+
+    const DEMO_RESET = "demo-reset";
+
+    function demoResetCount() {
+      return Number(globalSettings.demoResetCount) || 0;
+    }
+
+    // Frees all the demo's devices, in both directions, and puts every key back to "Choose a device…": this one
+    // straight away, and the others by the reset count each key's settings are stamped with ("demoReset", see
+    // saveSettings) - a key stamped before the latest reset has no device, to this panel (applyDemoReset) and to
+    // the plugin (applyDemoLimits() in edition.ts). A panel can only change its own key's settings.
+    function resetDemoDevices() {
+      globalSettings.demoDevices = [];
+      globalSettings.demoInputDevices = [];
+      globalSettings.demoDeviceUsers = {};
+      globalSettings.demoResetCount = demoResetCount() + 1;
+      send("setGlobalSettings", globalSettings);
+      clearDevices();
+    }
+
+    // This key's devices, back to "Choose a device…".
+    function clearDevices() {
+      settings.primary = settings.secondary = undefined;
+      settings.primaryLabel = settings.secondaryLabel = undefined;
+      updateDeviceLists(currentDevices());
+      saveSettings();
+      claimDemoDevices();
+    }
+
+    // Clears this key's devices if its settings predate the demo's latest reset; returns whether it did.
+    function applyDemoReset() {
+      if (!isDemo || !globalSettingsLoaded || !currentDevices()) return false;
+      if ((Number(settings.demoReset) || 0) >= demoResetCount()) return false;
+      clearDevices();
+      return true;
     }
 
     const STATE_LABEL = {
@@ -438,9 +659,12 @@
     }
 
     function updateDirection() {
+      if (isDemo) setDemoIcons(currentDirection());
       updateDeviceLists(document.getElementById('input').checked ? inputDevices : outputDevices);
       renderAllIconPickers();
       saveSettings();
+      // The button's devices in the old direction are now unused by it, so they may free up.
+      claimDemoDevices();
     }
 
     function updateHideUnavailable() {
@@ -464,11 +688,19 @@
 
       (availableIcons || []).forEach(icon => {
         if (icon.id === hiddenIconId) return;
+        // The demo has one icon per direction; the full version's others are shown too, but locked.
+        const locked = isDemo && icon.id !== demoIcon(isInput ? 'input' : 'output');
         const option = document.createElement('button');
         option.type = 'button';
-        option.className = icon.id === selectedIcon ? 'on' : '';
-        option.title = icon.label;
-        option.onclick = () => selectIcon(pickerId, settingsKey, defaultId, icon.id);
+        if (locked) {
+          option.className = 'locked';
+          option.title = `${icon.label} - available in the full version`;
+          option.disabled = true;
+        } else {
+          option.className = icon.id === selectedIcon ? 'on' : '';
+          option.title = icon.label;
+          option.onclick = () => selectIcon(pickerId, settingsKey, defaultId, icon.id);
+        }
         const img = document.createElement('img');
         img.src = `../AudioDevicesIcons/${icon.id}.png`;
         img.alt = icon.label;
@@ -559,7 +791,11 @@
       updateDeviceLists(isInput ? inputDevices : outputDevices);
       renderAllIconPickers();
       document.getElementById('mainWrapper').classList.remove('hidden');
+      // A demo key from before its latest reset goes back to "Choose a device…" (which saves it); checked
+      // before saving, since saving stamps the key as current.
+      if (applyDemoReset()) return;
       saveSettings();
+      claimDemoDevices();
     }
 
     function saveSettings() {
@@ -567,10 +803,11 @@
       const devices = isInput ? inputDevices : outputDevices;
       const primaryId = document.getElementById('primaryDevice').value;
       const secondaryId = document.getElementById('secondaryDevice').value;
+      // An empty ID is the demo's "Choose a device…" placeholder.
       settings.primary = devices[primaryId];
-      settings.primaryLabel = document.querySelector(`#primaryDevice option[value="${primaryId}"]`)?.label;
+      settings.primaryLabel = primaryId ? document.querySelector(`#primaryDevice option[value="${primaryId}"]`)?.label : undefined;
       settings.secondary = devices[secondaryId];
-      settings.secondaryLabel = document.querySelector(`#secondaryDevice option[value="${secondaryId}"]`)?.label;
+      settings.secondaryLabel = secondaryId ? document.querySelector(`#secondaryDevice option[value="${secondaryId}"]`)?.label : undefined;
       settings.direction = isInput ? 'input' : 'output';
       if (document.getElementById('allRole').checked) settings.role = 'all';
       else if (document.getElementById('communicationRole').checked) settings.role = 'communication';
@@ -578,6 +815,10 @@
       settings.matchStrategy = document.getElementById('exactMatch').checked ? 'ID' : 'Fuzzy';
       settings.hideUnavailable = document.getElementById('hideUnavailable').checked;
       settings.hideDeviceType = document.getElementById('hideDeviceType').checked;
+      // The demo stamps the key with its reset count, once it's known, so a later reset can tell it's out of
+      // date (see resetDemoDevices).
+      if (isDemo && globalSettingsLoaded) settings.demoReset = demoResetCount();
+      if (isDemo) demoKeyId();
       document.getElementById('primaryDevice').title = settings.primaryLabel || '';
       document.getElementById('secondaryDevice').title = settings.secondaryLabel || '';
       renderDeviceInfo('primaryDeviceInfo', settings.primary, settings.primaryLabel);
@@ -597,6 +838,29 @@
       document.getElementById('secondaryIconDiv').classList.toggle('hidden', isSetAction);
     }
 
+    // The demo's fixed choices: either direction, the Default or Communications role (not All), either
+    // matching, and one icon per direction (the speaker for output, the mic for input) - on 2 devices in
+    // each direction. The plugin applies the same limits (applyDemoLimits() in the Node plugin's
+    // edition.ts). The demo is Node-only, so the exe never reaches this.
+    function demoIcon(direction) {
+      return direction === 'input' ? 'mic' : 'speaker';
+    }
+
+    function setDemoIcons(direction) {
+      settings.icon = settings.primaryIcon = settings.secondaryIcon = demoIcon(direction);
+    }
+
+    function setupForEdition() {
+      if (!isDemo) return;
+      if (settings.role !== 'communication') settings.role = 'default';
+      setDemoIcons(settings.direction === 'input' ? 'input' : 'output');
+      // Both of Toggle's states show the same icon, so the secondary device's is dimmed by default.
+      if (!isSetAction) ICON_COLOR_DEFAULTS.secondaryIconColor = '#606060';
+      document.getElementById('allRole').disabled = true;
+      document.querySelector('label[for="allRole"]').title = 'Available in the full version';
+      document.getElementById('demoBanner').classList.remove('hidden');
+    }
+
     window.connectElgatoStreamDeckSocket = function (port, inUUID, registerEvent, inInfo, inActionInfo) {
       piUUID = inUUID;
       const info = JSON.parse(inInfo);
@@ -605,10 +869,14 @@
       isSetAction = actionInfo.endsWith(".set");
       settings = (action.payload && action.payload.settings) ? action.payload.settings : {};
       document.getElementById('version').textContent = info.plugin && info.plugin.version ? `v${info.plugin.version}` : '';
-      if (info.plugin && info.plugin.uuid && !info.plugin.uuid.endsWith("-node")) {
-        document.getElementById('pluginName').textContent = 'Audio Switcher Plus (exe)';
-      }
+      // The demo build's UUID ends in "-demo" ("...-node-demo"; there's no exe demo).
+      const pluginUUID = (info.plugin && info.plugin.uuid) || '';
+      isDemo = pluginUUID.endsWith("-demo");
+      const isExe = pluginUUID && !pluginUUID.includes("-node");
+      document.getElementById('pluginName').textContent =
+        `Audio Switcher Plus${isDemo ? ' Demo' : ''}${isExe ? ' (exe)' : ''}`;
       setupForAction();
+      setupForEdition();
 
       ws = new WebSocket(`ws://127.0.0.1:${port}`);
       ws.onopen = () => {
@@ -626,13 +894,22 @@
 
     // "Show help text" is a global setting, so ticking it once applies to every button's panel.
     var globalSettings = {};
+    var globalSettingsLoaded = false;
 
     function receivedGlobalSettings(message) {
       globalSettings = (message.payload && message.payload.settings) || {};
+      globalSettingsLoaded = true;
       const showHelp = globalSettings.showHelp === true;
       document.getElementById('showHelp').checked = showHelp;
       document.body.classList.toggle('show-help', showHelp);
       document.getElementById('deviceDetails').open = globalSettings.deviceDetailsOpen === true;
+      // The device list may have arrived first, drawn and saved before the demo's devices and reset count were
+      // known: clear the key if it predates the latest reset, or else save it again to stamp it as current.
+      if (isDemo && currentDevices() && !applyDemoReset()) {
+        updateDeviceLists(currentDevices());
+        saveSettings();
+        claimDemoDevices();
+      }
     }
 
     // Whether "Device details" is expanded is remembered globally too, so it stays open across buttons.

@@ -13,6 +13,8 @@ build/
 /com.morgan-scruggs.audioswitcherplus-node.sdPlugin/bin/
 /com.morgan-scruggs.audioswitcherplus-node.sdPlugin/AudioDevicesIcons/
 /com.morgan-scruggs.audioswitcherplus-node.sdPlugin/propertyinspector/
+# The demo's folder (Node only) is generated whole by its build; its manifest is derived from the full one.
+/com.morgan-scruggs.audioswitcherplus-node-demo.sdPlugin/
 
 # Windows Explorer thumbnail caches
 Thumbs.db

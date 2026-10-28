@@ -9,6 +9,7 @@ import streamDeck, {
 } from "@elgato/streamdeck";
 import { applyIcons } from "../apply-icon";
 import { audioDeviceService } from "../audio-device-service";
+import { applyDemoLimits, PLUGIN_UUID } from "../edition";
 import { handlePropertyInspectorMessage } from "../pi-bridge";
 import { backfillDeviceInfo, forgetState, performKeyPress, updateState } from "../state-sync";
 import type { ButtonSettings } from "../types";
@@ -17,7 +18,7 @@ import type { ButtonSettings } from "../types";
  * Sets one specific audio device as the active default (and/or communications) device - ported from
  * the "com.morganscruggs.audioswitcherplus.set" action in AudioSwitcherStreamDeckPlugin.cpp.
  */
-@action({ UUID: "com.morgan-scruggs.audioswitcherplus-node.set" })
+@action({ UUID: `${PLUGIN_UUID}.set` })
 export class SetDeviceAction extends SingletonAction<ButtonSettings> {
 	private unsubscribe = new Map<string, () => void>();
 	// Latest settings per visible action - the poll listener reads from here so it picks up changes made
@@ -27,7 +28,7 @@ export class SetDeviceAction extends SingletonAction<ButtonSettings> {
 	override async onWillAppear(ev: WillAppearEvent<ButtonSettings>): Promise<void> {
 		if (!ev.action.isKey()) return;
 		const action = ev.action;
-		const settings = ev.payload.settings;
+		const settings = applyDemoLimits(ev.payload.settings, "set");
 		this.settings.set(action.id, settings);
 
 		audioDeviceService.acquire();
@@ -53,13 +54,14 @@ export class SetDeviceAction extends SingletonAction<ButtonSettings> {
 
 	override onDidReceiveSettings(ev: DidReceiveSettingsEvent<ButtonSettings>): void {
 		if (!ev.action.isKey()) return;
-		this.settings.set(ev.action.id, ev.payload.settings);
-		applyIcons(ev.action, "set", ev.payload.settings);
-		updateState(ev.action, "set", ev.payload.settings, audioDeviceService.getSnapshot());
+		const settings = applyDemoLimits(ev.payload.settings, "set");
+		this.settings.set(ev.action.id, settings);
+		applyIcons(ev.action, "set", settings);
+		updateState(ev.action, "set", settings, audioDeviceService.getSnapshot());
 	}
 
 	override async onKeyUp(ev: KeyUpEvent<ButtonSettings>): Promise<void> {
-		await performKeyPress(ev.action, "set", ev.payload.settings, ev.payload.state);
+		await performKeyPress(ev.action, "set", applyDemoLimits(ev.payload.settings, "set"), ev.payload.state);
 	}
 
 	override async onSendToPlugin(ev: SendToPluginEvent<any, ButtonSettings>): Promise<void> {
