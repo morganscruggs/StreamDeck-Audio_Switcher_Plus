@@ -46,7 +46,7 @@
 	"Icon": "AudioDevicesIcons/headphones",
 	"Category": "Audio Switcher Plus",
 	"CategoryIcon": "AudioDevicesIcons/speaker",
-	"Version": "1.0.0.0",
+	"Version": "1.0.1.0",
 	"OS": [
 		{
 			"Platform": "windows",

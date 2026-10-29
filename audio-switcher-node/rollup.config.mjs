@@ -66,7 +66,7 @@ export default function config(commandLineArgs) {
 						manifest.UUID = demoPluginUUID;
 						manifest.Name = "Audio Switcher Plus Demo";
 						manifest.Category = manifest.Name;
-						manifest.Description = "Try out Audio Switcher Plus: switch between two output and two input devices of your choice. Based on Fred Emmott's Audio Switcher (github.com/fredemmott).";
+						manifest.Description = "Try out Audio Switcher Plus: toggle or set the active audio devices, with 10 switches per key. Based on Fred Emmott's Audio Switcher (github.com/fredemmott).";
 						for (const action of manifest.Actions) {
 							action.UUID = action.UUID.replace(fullPluginUUID, demoPluginUUID);
 						}
