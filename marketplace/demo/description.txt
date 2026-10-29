@@ -1,20 +1,19 @@
-Audio Switcher Plus (Demo) changes your Windows audio device from a Stream Deck key. It's the demo of Audio Switcher Plus: it switches between two outputs and two inputs of your choice. Every key shows which device is active.
+Audio Switcher Plus (Demo) changes your Windows audio device from a Stream Deck key. It's the demo of Audio Switcher Plus, with every feature of the full version, but each key switches devices 10 times. Every key shows which device is active, and a red badge shows how many switches it has left.
 
 Features
-• Toggle Audio Device: one key flips between your two devices
+• Toggle Audio Device: one key flips between two devices
 • Set Audio Device: one key per device, lit while that device is active
 • Output or input: switch speakers and headphones, or microphones
-• Role: Default, or Communications for calling apps
+• Role: Default, Communications (calling apps), or All for both
 • Live status: keys update instantly, even when you switch in Windows
 • Follows your devices: finds a device again after Windows renumbers it
-• Colors: On and Off colors for each key's icon
-• Nothing extra to install: runs inside Stream Deck, so Windows Smart App Control has nothing to block
+• Your icons and colors: headphones, speaker, earbuds or mic, in any color
 
 Setup
 1. Drag "Toggle Audio Device" or "Set Audio Device" onto a key.
-2. Choose Output or Input, then pick your device (two for Toggle). Pick another any time; the old one frees up once no key uses it.
+2. Pick your device (two for Toggle), then choose Output or Input and the role.
 
-Demo limits: two outputs and two inputs, and one icon each way (speaker, mic). The full version adds every device, the All role, and headphones and earbuds icons, and installs as a separate plugin:
+Demo limit: each key switches devices 10 times; pressing a device that's already active doesn't count. The full version has no limit and installs as a separate plugin:
 https://marketplace.elgato.com/product/audio-switcher-plus-78785833-a69e-4d6b-93df-e553707ecc8a
 
 Based on Fred Emmott's open-source Audio Switcher, with added features.

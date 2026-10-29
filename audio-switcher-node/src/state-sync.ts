@@ -2,7 +2,7 @@ import type { KeyAction } from "@elgato/streamdeck";
 import streamDeck from "@elgato/streamdeck";
 import { getVolatileDeviceId } from "./device-match";
 import { audioDeviceService } from "./audio-device-service";
-import { isDeviceAllowed } from "./edition";
+import { useSwitch } from "./edition";
 import type { AudioSnapshot, ButtonSettings, DirectionSnapshot } from "./types";
 
 export type ActionKind = "set" | "toggle";
@@ -154,17 +154,8 @@ async function switchDevice(action: KeyAction<ButtonSettings>, kind: ActionKind,
 	const snapshot = audioDeviceService.getSnapshot();
 	const dirSnap = directionSnapshot(snapshot, settings.direction);
 
-	const targetsPrimary = state !== 0 || kind === "set";
-	const deviceId = targetsPrimary ? resolvePrimaryId(settings, snapshot) : resolveSecondaryId(settings, snapshot);
+	const deviceId = state !== 0 || kind === "set" ? resolvePrimaryId(settings, snapshot) : resolveSecondaryId(settings, snapshot);
 	if (!deviceId) {
-		await action.showAlert().catch(() => undefined);
-		return;
-	}
-
-	// The demo only switches to the devices picked for it; performKeyPress re-resolves the key's state. Checked
-	// by the device as picked rather than as resolved, since fuzzy matching may find it again under a new ID.
-	const pickedId = (targetsPrimary ? settings.primary : settings.secondary)?.id ?? deviceId;
-	if (!isDeviceAllowed(pickedId, settings.direction)) {
 		await action.showAlert().catch(() => undefined);
 		return;
 	}
@@ -185,6 +176,13 @@ async function switchDevice(action: KeyAction<ButtonSettings>, kind: ActionKind,
 			if (state !== undefined) await action.setState(state).catch(() => undefined);
 			return;
 		}
+	}
+
+	// The demo's per-key allowance: only a press that's about to change the device counts, and once the key has
+	// none left it doesn't switch (performKeyPress re-resolves the key's state).
+	if (!useSwitch(action, settings)) {
+		await action.showAlert().catch(() => undefined);
+		return;
 	}
 
 	await audioDeviceService.setDefaultDevice(settings.role === "all" ? ["default", "communication"] : [settings.role], deviceId);

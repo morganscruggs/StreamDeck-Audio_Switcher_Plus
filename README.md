@@ -22,13 +22,12 @@ Shared assets (the button icons, the property inspector, and the `VERSION` file 
 
 ## Demo version
 
-The Node version also builds as a free demo - only the Node version, since it's the one published on the Elgato Marketplace (the exe can't be signed). The demo is a separate plugin with its own UUID (`com.morgan-scruggs.audioswitcherplus-node-demo`), so it installs alongside the full version. The demo:
+The Node version also builds as a free demo - only the Node version, since it's the one published on the Elgato Marketplace (the exe can't be signed). The demo is a separate plugin with its own UUID (`com.morgan-scruggs.audioswitcherplus-node-demo`), so it installs alongside the full version. It has every feature of the full version, but each key only switches devices **10 times**:
 
-- switches between **2 output devices and 2 input devices** of the user's choice, shared by all its buttons and kept in the plugin's global settings. Picking a different device on a button frees the old one as soon as no button uses it (the property inspector records each button's devices to tell, under an ID it keeps in the button's own settings, since Stream Deck's own ID for a button isn't guaranteed to last between sessions); while both of a direction's devices are still in use, other devices show as "full version" in the device list. Deleting a key doesn't free its devices, since Stream Deck doesn't report that - so the device lists end with **Reset all device selections**, which frees all the demo's devices and puts every key back to "Choose a device…". A property inspector can only rewrite its own key, so the others are reset by a count each key is stamped with: one stamped before the latest reset counts as having no device, to the plugin straight away and to its property inspector, which clears it, when next opened.
-- offers both directions, the **Default** and **Communications** roles and both kinds of matching, but not the **All** role, which is shown but disabled. With **Fuzzy** matching, a picked device still counts as one of the demo's after Windows renumbers it.
-- uses one icon per direction - the **speaker** for output, the **mic** for input (colors can still be changed; Toggle's second state is dimmed by default so the two states can be told apart).
-
-The limits are applied both in the shared property inspector, which recognizes the demo by its UUID, and in the plugin (`audio-switcher-node/src/edition.ts`), which re-applies them to every button's settings and refuses to switch to a device that isn't one of the two. They're meant to make paying easier than not, not to be tamper-proof: anyone can build the full version from this repo.
+- Only a press that actually changes the default device counts - one that changes nothing (the device is already set, or unplugged) doesn't. Once a key has none left, it shows the alert instead of switching.
+- The count is kept in each key's own settings (`demoSwitchesUsed`, see `useSwitch()` in `audio-switcher-node/src/edition.ts`), so a new key starts at 10 - deliberately: making new keys is allowed, just tedious enough to make buying worthwhile. A copied key keeps its count.
+- Every demo key shows how many it has left, as a red badge in its bottom-right corner, redrawn after each switch; the property inspector's demo note shows the same for the key being edited.
+The limit is meant to make paying easier than not, not to be tamper-proof: anyone can build the full version from this repo.
 
 `npm run build:demo` builds it (see [the Node README](audio-switcher-node/README.md#building)). CI packages and releases it with the full versions.
 

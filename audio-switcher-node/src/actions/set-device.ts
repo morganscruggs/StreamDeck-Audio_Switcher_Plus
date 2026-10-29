@@ -9,7 +9,7 @@ import streamDeck, {
 } from "@elgato/streamdeck";
 import { applyIcons } from "../apply-icon";
 import { audioDeviceService } from "../audio-device-service";
-import { applyDemoLimits, PLUGIN_UUID } from "../edition";
+import { IS_DEMO, PLUGIN_UUID } from "../edition";
 import { handlePropertyInspectorMessage } from "../pi-bridge";
 import { backfillDeviceInfo, forgetState, performKeyPress, updateState } from "../state-sync";
 import type { ButtonSettings } from "../types";
@@ -28,7 +28,7 @@ export class SetDeviceAction extends SingletonAction<ButtonSettings> {
 	override async onWillAppear(ev: WillAppearEvent<ButtonSettings>): Promise<void> {
 		if (!ev.action.isKey()) return;
 		const action = ev.action;
-		const settings = applyDemoLimits(ev.payload.settings, "set");
+		const settings = ev.payload.settings;
 		this.settings.set(action.id, settings);
 
 		audioDeviceService.acquire();
@@ -54,14 +54,20 @@ export class SetDeviceAction extends SingletonAction<ButtonSettings> {
 
 	override onDidReceiveSettings(ev: DidReceiveSettingsEvent<ButtonSettings>): void {
 		if (!ev.action.isKey()) return;
-		const settings = applyDemoLimits(ev.payload.settings, "set");
+		const settings = ev.payload.settings;
 		this.settings.set(ev.action.id, settings);
 		applyIcons(ev.action, "set", settings);
 		updateState(ev.action, "set", settings, audioDeviceService.getSnapshot());
 	}
 
 	override async onKeyUp(ev: KeyUpEvent<ButtonSettings>): Promise<void> {
-		await performKeyPress(ev.action, "set", applyDemoLimits(ev.payload.settings, "set"), ev.payload.state);
+		const settings = ev.payload.settings;
+		await performKeyPress(ev.action, "set", settings, ev.payload.state);
+		// The demo counts each key's switches in its settings (see useSwitch); redraw its counter.
+		if (IS_DEMO) {
+			this.settings.set(ev.action.id, settings);
+			applyIcons(ev.action, "set", settings);
+		}
 	}
 
 	override async onSendToPlugin(ev: SendToPluginEvent<any, ButtonSettings>): Promise<void> {
