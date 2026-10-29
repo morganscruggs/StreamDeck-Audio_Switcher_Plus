@@ -2,6 +2,7 @@ import type { KeyAction } from "@elgato/streamdeck";
 import streamDeck from "@elgato/streamdeck";
 import { getVolatileDeviceId } from "./device-match";
 import { audioDeviceService } from "./audio-device-service";
+import { useSwitch } from "./edition";
 import type { AudioSnapshot, ButtonSettings, DirectionSnapshot } from "./types";
 
 export type ActionKind = "set" | "toggle";
@@ -175,6 +176,13 @@ async function switchDevice(action: KeyAction<ButtonSettings>, kind: ActionKind,
 			if (state !== undefined) await action.setState(state).catch(() => undefined);
 			return;
 		}
+	}
+
+	// The demo's per-key allowance: only a press that's about to change the device counts, and once the key has
+	// none left it doesn't switch (performKeyPress re-resolves the key's state).
+	if (!useSwitch(action, settings)) {
+		await action.showAlert().catch(() => undefined);
+		return;
 	}
 
 	await audioDeviceService.setDefaultDevice(settings.role === "all" ? ["default", "communication"] : [settings.role], deviceId);

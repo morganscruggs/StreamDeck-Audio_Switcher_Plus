@@ -9,6 +9,7 @@ import streamDeck, {
 } from "@elgato/streamdeck";
 import { applyIcons } from "../apply-icon";
 import { audioDeviceService } from "../audio-device-service";
+import { IS_DEMO, PLUGIN_UUID } from "../edition";
 import { handlePropertyInspectorMessage } from "../pi-bridge";
 import { backfillDeviceInfo, forgetState, performKeyPress, updateState } from "../state-sync";
 import type { ButtonSettings } from "../types";
@@ -17,7 +18,7 @@ import type { ButtonSettings } from "../types";
  * Toggles between two configured audio devices - ported from the
  * "com.morganscruggs.audioswitcherplus.toggle" action in AudioSwitcherStreamDeckPlugin.cpp.
  */
-@action({ UUID: "com.morgan-scruggs.audioswitcherplus-node.toggle" })
+@action({ UUID: `${PLUGIN_UUID}.toggle` })
 export class ToggleDeviceAction extends SingletonAction<ButtonSettings> {
 	private unsubscribe = new Map<string, () => void>();
 	// Latest settings per visible action - the poll listener reads from here so it picks up changes made
@@ -53,13 +54,20 @@ export class ToggleDeviceAction extends SingletonAction<ButtonSettings> {
 
 	override onDidReceiveSettings(ev: DidReceiveSettingsEvent<ButtonSettings>): void {
 		if (!ev.action.isKey()) return;
-		this.settings.set(ev.action.id, ev.payload.settings);
-		applyIcons(ev.action, "toggle", ev.payload.settings);
-		updateState(ev.action, "toggle", ev.payload.settings, audioDeviceService.getSnapshot());
+		const settings = ev.payload.settings;
+		this.settings.set(ev.action.id, settings);
+		applyIcons(ev.action, "toggle", settings);
+		updateState(ev.action, "toggle", settings, audioDeviceService.getSnapshot());
 	}
 
 	override async onKeyUp(ev: KeyUpEvent<ButtonSettings>): Promise<void> {
-		await performKeyPress(ev.action, "toggle", ev.payload.settings, ev.payload.state);
+		const settings = ev.payload.settings;
+		await performKeyPress(ev.action, "toggle", settings, ev.payload.state);
+		// The demo counts each key's switches in its settings (see useSwitch); redraw its counter.
+		if (IS_DEMO) {
+			this.settings.set(ev.action.id, settings);
+			applyIcons(ev.action, "toggle", settings);
+		}
 	}
 
 	override async onSendToPlugin(ev: SendToPluginEvent<any, ButtonSettings>): Promise<void> {

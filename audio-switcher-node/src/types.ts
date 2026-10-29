@@ -49,4 +49,6 @@ export type ButtonSettings = {
 	secondaryIcon?: string;
 	primaryIconColor?: string;
 	secondaryIconColor?: string;
+	// Demo only: how many times this key has switched devices - see useSwitch() in edition.ts.
+	demoSwitchesUsed?: number;
 };

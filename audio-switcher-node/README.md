@@ -27,6 +27,8 @@ npm run build
 
 This compiles `src/plugin.ts` into `com.morgan-scruggs.audioswitcherplus-node.sdPlugin/bin/plugin.js` and, if `%APPDATA%\Elgato\StreamDeck\Plugins\` exists and isn't a symlink back to this folder, copies the whole built plugin folder there. Set `SYNC_TO_STREAMDECK=0` to skip that copy (CI does).
 
+`npm run build:demo` builds the demo edition (see [the repo root README](../README.md#demo-version)) into `com.morgan-scruggs.audioswitcherplus-node-demo.sdPlugin` instead, and syncs it the same way. It's the same code; only its manifest differs, generated from the full one with the demo's UUID and name, and `src/edition.ts` reads the UUID back to apply the demo's limits.
+
 The build also stamps the manifest's `Version` from [`shared/VERSION`](../shared/VERSION), shared with the exe build, so bump the version there rather than in `manifest.json`.
 
 `npm run typecheck` type-checks the sources and tests; `npm test` runs the tests.

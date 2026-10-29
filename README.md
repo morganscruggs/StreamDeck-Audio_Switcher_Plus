@@ -20,9 +20,28 @@ Both install and run completely independently (different plugin UUIDs, different
 
 Shared assets (the button icons, the property inspector, and the `VERSION` file both plugins take their version from) live in [`shared/`](shared/) and are pulled in by both projects' build steps rather than duplicated.
 
+## Demo version
+
+The Node version also builds as a free demo - only the Node version, since it's the one published on the Elgato Marketplace (the exe can't be signed). The demo is a separate plugin with its own UUID (`com.morgan-scruggs.audioswitcherplus-node-demo`), so it installs alongside the full version. It has every feature of the full version, but each key only switches devices **10 times**:
+
+- Only a press that actually changes the default device counts - one that changes nothing (the device is already set, or unplugged) doesn't. Once a key has none left, it shows the alert instead of switching.
+- The count is kept in each key's own settings (`demoSwitchesUsed`, see `useSwitch()` in `audio-switcher-node/src/edition.ts`), so a new key starts at 10 - deliberately: making new keys is allowed, just tedious enough to make buying worthwhile. A copied key keeps its count.
+- Every demo key shows how many it has left, as a red badge in its bottom-right corner, redrawn after each switch; the property inspector's demo note shows the same for the key being edited.
+The limit is meant to make paying easier than not, not to be tamper-proof: anyone can build the full version from this repo.
+
+`npm run build:demo` builds it (see [the Node README](audio-switcher-node/README.md#building)). CI packages and releases it with the full versions.
+
 ## Building
 
 Each build documents its own process - see the "Building"/"Building From Source" section of [the exe README](audio-switcher-exe/README.md#building-from-source) or [the node README](audio-switcher-node/README.md#building). Both build steps install straight into `%APPDATA%\Elgato\StreamDeck\Plugins\`, so **fully quit Stream Deck before building/installing**, then relaunch it afterward to pick up the change.
+
+To do all of it in one go, run [`build-all.ps1`](build-all.ps1) from the repo root:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File build-all.ps1
+```
+
+It builds the Node plugin, the Node demo and the exe and packages all three into [`marketplace/`](marketplace/) (Node and exe into `full/`, the demo into `demo/`; add `-SkipPackage` to skip this) while Stream Deck keeps running, then quits Stream Deck just long enough to copy the three into its Plugins folder, and starts it again - even if the copy fails. If a build fails, Stream Deck is never closed. It needs the same tools as the individual builds: Node.js, CMake and Visual Studio 2022's C++ workload.
 
 ## Releasing
 

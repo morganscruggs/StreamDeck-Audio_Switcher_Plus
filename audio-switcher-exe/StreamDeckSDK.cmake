@@ -51,13 +51,17 @@ endfunction()
 # Stream Deck's real Plugins directory. Must be called after every other install() rule in the project
 # (install() rules run in declaration order), so Stream Deck always sees a complete, consistent copy.
 # Skipped when SYNC_TO_STREAMDECK is off, or when Stream Deck isn't installed (no Plugins folder) -
-# matching the Node project's rollup config.
+# matching the Node project's rollup config. Also skipped for a single build by setting the
+# SYNC_TO_STREAMDECK environment variable to 0, read when the install runs, as the Node build reads it
+# (build-all.ps1 does this, to install everything itself once all of it has built).
 function(sync_install_to_streamdeck_plugin_dir)
   if(NOT SYNC_TO_STREAMDECK)
     return()
   endif()
   install(CODE "
-    if(EXISTS \"${STREAMDECK_PLUGIN_DIR}\")
+    if(\"\$ENV{SYNC_TO_STREAMDECK}\" STREQUAL \"0\")
+      message(STATUS \"SYNC_TO_STREAMDECK=0 - skipping sync to Stream Deck's Plugins folder\")
+    elseif(EXISTS \"${STREAMDECK_PLUGIN_DIR}\")
       file(REMOVE_RECURSE \"${STREAMDECK_PLUGIN_DIR}/${CMAKE_PROJECT_NAME}\")
       file(COPY \"${CMAKE_INSTALL_PREFIX}/\" DESTINATION \"${STREAMDECK_PLUGIN_DIR}/${CMAKE_PROJECT_NAME}\")
       message(STATUS \"Synced plugin to ${STREAMDECK_PLUGIN_DIR}/${CMAKE_PROJECT_NAME}\")

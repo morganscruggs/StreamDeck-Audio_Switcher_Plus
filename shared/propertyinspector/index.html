@@ -77,6 +77,16 @@
     .seg label:last-child { border-right: 0; }
     .seg input:checked + label { background: #46617f; color: #eaf2fb; }
 
+    /* The demo's notes, styled like Multi Volume Controller's demo limit note (.app-limit-note there). */
+    .demo-note {
+      display: flex; align-items: flex-start; gap: 6px; padding: 6px 8px;
+      border: 1px solid #ff3b30; border-radius: 4px; background: rgba(255, 59, 48, 0.12);
+      color: #ff4d4d; font-size: 11px; font-weight: 600; line-height: 1.35;
+    }
+    .demo-note svg { flex: none; margin-top: 1px; }
+    .demo-note a { color: #ff4d4d; font-size: inherit; font-weight: inherit; }
+    #demoBanner { margin-bottom: 6px; }
+
     .check { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 3px; }
     .check input { accent-color: var(--accent); margin-top: 2px; }
     .check label { cursor: pointer; }
@@ -137,7 +147,21 @@
 </head>
 
 <body>
+  <!-- The demo notes' alert icon, the same as Multi Volume Controller's. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="demoAlert" viewBox="0 0 16 16">
+      <circle cx="8" cy="8" r="8" fill="#ff3b30" />
+      <rect x="7" y="3.5" width="2" height="6" rx="1" fill="#fff" />
+      <circle cx="8" cy="12" r="1.1" fill="#fff" />
+    </symbol>
+  </svg>
+
   <div class="hidden" id="mainWrapper">
+
+    <div class="demo-note hidden" id="demoBanner" role="note">
+      <svg width="14" height="14" aria-hidden="true"><use href="#demoAlert" /></svg>
+      <div><b>Demo version</b> - <span id="demoSwitchesLeft">10 of 10</span> device switches left on this key. The <a href="#" onclick="openFullVersion(event);">full version</a> has no limit.</div>
+    </div>
 
     <details open>
       <summary id="devicesSummary">Device</summary>
@@ -270,6 +294,7 @@
       <label for="showHelp">Show help text</label>
     </div>
 
+
     <footer>
       <span id="version"></span>
       <em><span id="pluginName">Audio Switcher Plus</span> by Morgan Scruggs · based on Fred Emmott's Audio Switcher</em>
@@ -284,6 +309,7 @@
       piUUID,
       actionInfo,
       isSetAction,
+      isDemo,
       inputDevices,
       outputDevices,
       availableIcons,
@@ -357,7 +383,6 @@
           "device_not_present": " (not present)",
           "device_disabled": " (disabled)"
         }[device.state];
-
         const primaryOption = document.createElement("option");
         primaryOption.setAttribute("value", deviceId);
         primaryOption.setAttribute("label", displayName);
@@ -389,6 +414,15 @@
         cloned.removeAttribute('selected');
         primarySelector.appendChild(cloned);
       }
+    }
+
+    // The full version's Marketplace page, linked from the demo's note. The property inspector can't open a
+    // page itself, so it asks Stream Deck to open it in the browser.
+    const FULL_VERSION_URL = "https://marketplace.elgato.com/product/audio-switcher-plus-78785833-a69e-4d6b-93df-e553707ecc8a";
+
+    function openFullVersion(event) {
+      event.preventDefault();
+      send("openUrl", { url: FULL_VERSION_URL });
     }
 
     const STATE_LABEL = {
@@ -567,10 +601,11 @@
       const devices = isInput ? inputDevices : outputDevices;
       const primaryId = document.getElementById('primaryDevice').value;
       const secondaryId = document.getElementById('secondaryDevice').value;
+      // An empty ID means the list is empty.
       settings.primary = devices[primaryId];
-      settings.primaryLabel = document.querySelector(`#primaryDevice option[value="${primaryId}"]`)?.label;
+      settings.primaryLabel = primaryId ? document.querySelector(`#primaryDevice option[value="${primaryId}"]`)?.label : undefined;
       settings.secondary = devices[secondaryId];
-      settings.secondaryLabel = document.querySelector(`#secondaryDevice option[value="${secondaryId}"]`)?.label;
+      settings.secondaryLabel = secondaryId ? document.querySelector(`#secondaryDevice option[value="${secondaryId}"]`)?.label : undefined;
       settings.direction = isInput ? 'input' : 'output';
       if (document.getElementById('allRole').checked) settings.role = 'all';
       else if (document.getElementById('communicationRole').checked) settings.role = 'communication';
@@ -597,6 +632,31 @@
       document.getElementById('secondaryIconDiv').classList.toggle('hidden', isSetAction);
     }
 
+    // The demo has every feature, but each key only switches devices a few times - the plugin counts them in
+    // the key's settings ("demoSwitchesUsed", see useSwitch() in edition.ts) and draws the number left on the
+    // key; its note here shows it too. The demo is Node-only, so the exe never reaches this.
+    const DEMO_SWITCHES_PER_KEY = 10;
+
+    function setupForEdition() {
+      if (!isDemo) return;
+      document.getElementById('demoBanner').classList.remove('hidden');
+      renderDemoSwitches();
+    }
+
+    function renderDemoSwitches() {
+      const left = Math.max(0, DEMO_SWITCHES_PER_KEY - (Number(settings.demoSwitchesUsed) || 0));
+      document.getElementById('demoSwitchesLeft').textContent = `${left} of ${DEMO_SWITCHES_PER_KEY}`;
+    }
+
+    // The plugin saves the key's count when it switches, so take that up - and only that, so it can't undo a
+    // change being made here - keeping this panel's later saves from writing back an older count.
+    function receivedSettings(message) {
+      const used = message.payload && message.payload.settings && message.payload.settings.demoSwitchesUsed;
+      if (!isDemo || used === undefined) return;
+      settings.demoSwitchesUsed = used;
+      renderDemoSwitches();
+    }
+
     window.connectElgatoStreamDeckSocket = function (port, inUUID, registerEvent, inInfo, inActionInfo) {
       piUUID = inUUID;
       const info = JSON.parse(inInfo);
@@ -605,10 +665,14 @@
       isSetAction = actionInfo.endsWith(".set");
       settings = (action.payload && action.payload.settings) ? action.payload.settings : {};
       document.getElementById('version').textContent = info.plugin && info.plugin.version ? `v${info.plugin.version}` : '';
-      if (info.plugin && info.plugin.uuid && !info.plugin.uuid.endsWith("-node")) {
-        document.getElementById('pluginName').textContent = 'Audio Switcher Plus (exe)';
-      }
+      // The demo build's UUID ends in "-demo" ("...-node-demo"; there's no exe demo).
+      const pluginUUID = (info.plugin && info.plugin.uuid) || '';
+      isDemo = pluginUUID.endsWith("-demo");
+      const isExe = pluginUUID && !pluginUUID.includes("-node");
+      document.getElementById('pluginName').textContent =
+        `Audio Switcher Plus${isDemo ? ' Demo' : ''}${isExe ? ' (exe)' : ''}`;
       setupForAction();
+      setupForEdition();
 
       ws = new WebSocket(`ws://127.0.0.1:${port}`);
       ws.onopen = () => {
@@ -621,6 +685,7 @@
         const message = JSON.parse(event.data);
         if (message.event === "sendToPropertyInspector") receivedDataFromPlugin(message);
         else if (message.event === "didReceiveGlobalSettings") receivedGlobalSettings(message);
+        else if (message.event === "didReceiveSettings") receivedSettings(message);
       };
     };
 

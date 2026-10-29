@@ -1,9 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { PLUGIN_ROOT } from "./edition";
 
-// This file compiles to <sdPlugin>/bin/plugin.js, so the plugin's own root is one directory up.
-const PLUGIN_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ICONS_DIR = path.join(PLUGIN_ROOT, "AudioDevicesIcons");
 
 /**
