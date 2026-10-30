@@ -24,6 +24,10 @@ enum class ButtonRole {
 
 struct ButtonSettings {
   AudioDeviceDirection direction = AudioDeviceDirection::INPUT;
+  // The "Set" action's direction "both" (which `direction` can't hold): it
+  // sets an output device (primaryDevice) and an input device
+  // (secondaryDevice) together.
+  bool bothDirections = false;
   ButtonRole role = ButtonRole::ALL;
   AudioDeviceInfo primaryDevice;
   AudioDeviceInfo secondaryDevice;

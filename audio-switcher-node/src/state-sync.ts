@@ -3,24 +3,45 @@ import streamDeck from "@elgato/streamdeck";
 import { getVolatileDeviceId } from "./device-match";
 import { audioDeviceService } from "./audio-device-service";
 import { useSwitch } from "./edition";
-import type { AudioSnapshot, ButtonSettings, DirectionSnapshot } from "./types";
+import type { AudioDeviceDirection, AudioDeviceRole, AudioSnapshot, ButtonSettings, DirectionSnapshot } from "./types";
 
 export type ActionKind = "set" | "toggle";
 
-function directionSnapshot(snapshot: AudioSnapshot | undefined, direction: ButtonSettings["direction"]): DirectionSnapshot | undefined {
-	return snapshot?.[direction];
+type DeviceSlot = "primary" | "secondary";
+
+/** The direction a configured device is picked from: Set's "both" has its output as primary and its input as secondary. */
+function slotDirection(settings: ButtonSettings, slot: DeviceSlot): AudioDeviceDirection {
+	if (settings.direction !== "both") return settings.direction;
+	return slot === "primary" ? "output" : "input";
 }
 
-function resolvePrimaryId(settings: ButtonSettings, snapshot: AudioSnapshot | undefined): string {
-	return getVolatileDeviceId(settings.primary, settings.matchStrategy, directionSnapshot(snapshot, settings.direction));
+function slotSnapshot(snapshot: AudioSnapshot | undefined, settings: ButtonSettings, slot: DeviceSlot): DirectionSnapshot | undefined {
+	return snapshot?.[slotDirection(settings, slot)];
 }
 
-function resolveSecondaryId(settings: ButtonSettings, snapshot: AudioSnapshot | undefined): string {
-	return getVolatileDeviceId(settings.secondary, settings.matchStrategy, directionSnapshot(snapshot, settings.direction));
+function resolveDeviceId(settings: ButtonSettings, slot: DeviceSlot, snapshot: AudioSnapshot | undefined): string {
+	return getVolatileDeviceId(settings[slot], settings.matchStrategy, slotSnapshot(snapshot, settings, slot));
 }
 
 function defaultIdForRole(dirSnap: DirectionSnapshot | undefined, role: ButtonSettings["role"]): string {
 	return (role === "communication" ? dirSnap?.communicationsDeviceId : dirSnap?.defaultDeviceId) ?? "";
+}
+
+/** Whether `deviceId` is already the device for every role the button sets. */
+function isActiveForRole(dirSnap: DirectionSnapshot | undefined, role: ButtonSettings["role"], deviceId: string): boolean {
+	if (role === "all") return deviceId === (dirSnap?.defaultDeviceId ?? "") && deviceId === (dirSnap?.communicationsDeviceId ?? "");
+	return deviceId === defaultIdForRole(dirSnap, role);
+}
+
+function rolesFor(settings: ButtonSettings): AudioDeviceRole[] {
+	return settings.role === "all" ? ["default", "communication"] : [settings.role];
+}
+
+/** Set's "both": its configured devices (output, then input), each with its own direction's snapshot. */
+function bothDevices(settings: ButtonSettings, snapshot: AudioSnapshot | undefined): { deviceId: string; dirSnap: DirectionSnapshot | undefined }[] {
+	return (["primary", "secondary"] as const)
+		.map((slot) => ({ deviceId: resolveDeviceId(settings, slot, snapshot), dirSnap: slotSnapshot(snapshot, settings, slot) }))
+		.filter(({ deviceId }) => deviceId);
 }
 
 /**
@@ -30,13 +51,11 @@ function defaultIdForRole(dirSnap: DirectionSnapshot | undefined, role: ButtonSe
  * endpointName, not just id.
  */
 export async function backfillDeviceInfo(action: KeyAction<ButtonSettings>, settings: ButtonSettings, snapshot: AudioSnapshot | undefined): Promise<void> {
-	const dirSnap = directionSnapshot(snapshot, settings.direction);
-	if (!dirSnap) return;
-
 	let changed = false;
 	for (const key of ["primary", "secondary"] as const) {
+		const dirSnap = slotSnapshot(snapshot, settings, key);
 		const device = settings[key];
-		if (device?.id && !device.displayName) {
+		if (dirSnap && device?.id && !device.displayName) {
 			const found = dirSnap.devices[device.id];
 			if (found) {
 				settings[key] = found;
@@ -90,9 +109,17 @@ export function updateState(
 		return;
 	}
 
-	const dirSnap = directionSnapshot(snapshot, settings.direction);
-	const primaryId = resolvePrimaryId(settings, snapshot);
-	const secondaryId = resolveSecondaryId(settings, snapshot);
+	if (settings.direction === "both") {
+		// On only while its output and its input are both active; one left unset doesn't count against it.
+		const devices = bothDevices(settings, snapshot);
+		const on = devices.length > 0 && devices.every(({ deviceId, dirSnap }) => isActiveForRole(dirSnap, settings.role, deviceId));
+		action.setState(on ? 0 : 1).catch((error) => streamDeck.logger.error("Failed to set state", error));
+		return;
+	}
+
+	const dirSnap = slotSnapshot(snapshot, settings, "primary");
+	const primaryId = resolveDeviceId(settings, "primary", snapshot);
+	const secondaryId = resolveDeviceId(settings, "secondary", snapshot);
 
 	let activeDevice: string;
 	if (settings.role === "all") {
@@ -151,10 +178,15 @@ export async function performKeyPress(action: KeyAction<ButtonSettings>, kind: A
  * apply).
  */
 async function switchDevice(action: KeyAction<ButtonSettings>, kind: ActionKind, settings: ButtonSettings, state: number | undefined): Promise<void> {
-	const snapshot = audioDeviceService.getSnapshot();
-	const dirSnap = directionSnapshot(snapshot, settings.direction);
+	if (settings.direction === "both") {
+		await switchBothDevices(action, settings, state);
+		return;
+	}
 
-	const deviceId = state !== 0 || kind === "set" ? resolvePrimaryId(settings, snapshot) : resolveSecondaryId(settings, snapshot);
+	const snapshot = audioDeviceService.getSnapshot();
+	const dirSnap = slotSnapshot(snapshot, settings, "primary");
+
+	const deviceId = resolveDeviceId(settings, state !== 0 || kind === "set" ? "primary" : "secondary", snapshot);
 	if (!deviceId) {
 		await action.showAlert().catch(() => undefined);
 		return;
@@ -167,15 +199,9 @@ async function switchDevice(action: KeyAction<ButtonSettings>, kind: ActionKind,
 		return;
 	}
 
-	if (kind === "set") {
-		const alreadySet =
-			settings.role === "all"
-				? deviceId === (dirSnap?.defaultDeviceId ?? "") && deviceId === (dirSnap?.communicationsDeviceId ?? "")
-				: deviceId === defaultIdForRole(dirSnap, settings.role);
-		if (alreadySet) {
-			if (state !== undefined) await action.setState(state).catch(() => undefined);
-			return;
-		}
+	if (kind === "set" && isActiveForRole(dirSnap, settings.role, deviceId)) {
+		if (state !== undefined) await action.setState(state).catch(() => undefined);
+		return;
 	}
 
 	// The demo's per-key allowance: only a press that's about to change the device counts, and once the key has
@@ -185,5 +211,39 @@ async function switchDevice(action: KeyAction<ButtonSettings>, kind: ActionKind,
 		return;
 	}
 
-	await audioDeviceService.setDefaultDevice(settings.role === "all" ? ["default", "communication"] : [settings.role], deviceId);
+	await audioDeviceService.setDefaultDevices(rolesFor(settings), [deviceId]);
+}
+
+/**
+ * Set's "both": sets its output and its input device together. One that's unplugged is skipped with an alert
+ * rather than holding back the other, and the demo counts the press as one switch.
+ */
+async function switchBothDevices(action: KeyAction<ButtonSettings>, settings: ButtonSettings, state: number | undefined): Promise<void> {
+	const devices = bothDevices(settings, audioDeviceService.getSnapshot());
+	if (devices.length === 0) {
+		await action.showAlert().catch(() => undefined);
+		return;
+	}
+
+	const connected = devices.filter(({ deviceId, dirSnap }) => dirSnap?.devices[deviceId]?.state === "connected");
+	const missing = connected.length < devices.length;
+	const toSet = connected.filter(({ deviceId, dirSnap }) => !isActiveForRole(dirSnap, settings.role, deviceId)).map(({ deviceId }) => deviceId);
+
+	if (toSet.length === 0) {
+		if (missing) {
+			await action.setState(1).catch(() => undefined);
+			await action.showAlert().catch(() => undefined);
+		} else if (state !== undefined) {
+			await action.setState(state).catch(() => undefined);
+		}
+		return;
+	}
+
+	if (!useSwitch(action, settings)) {
+		await action.showAlert().catch(() => undefined);
+		return;
+	}
+
+	await audioDeviceService.setDefaultDevices(rolesFor(settings), toSet);
+	if (missing) await action.showAlert().catch(() => undefined);
 }

@@ -29,9 +29,12 @@ export type DeviceMatchStrategy = "ID" | "Fuzzy";
 
 export type ButtonRole = "default" | "communication" | "all";
 
+/** "both" is the Set action's only: it sets an output device (`primary`) and an input device (`secondary`) together. */
+export type ButtonDirection = AudioDeviceDirection | "both";
+
 /** Mirrors ButtonSettings.h/.cpp - the persisted settings shape shared by both actions. */
 export type ButtonSettings = {
-	direction: AudioDeviceDirection;
+	direction: ButtonDirection;
 	role: ButtonRole;
 	primary?: AudioDeviceInfo;
 	primaryLabel?: string;

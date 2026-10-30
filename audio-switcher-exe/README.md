@@ -11,6 +11,7 @@ original
 
 new
 - ability to set both default device **and** communication device
+- ability to set an output **and** an input device with one "Set Audio Device" button (direction "Both")
 - choosing a custom icon per button(headphones, earbuds, speaker, mic)
 - choosing custom colors for icons in both On and Off modes
 - simplified device selecton 
@@ -26,7 +27,7 @@ By default, new buttons use fuzzy device matching and the "All" role (affecting 
 
 Both "Set Audio Device" and "Toggle Audio Device" buttons let you pick an icon (Earbuds, Headphones, Mic, or Speaker) instead of the plugin's default images, plus a color for each of the button's states:
 
-- **Set Audio Device** has one icon with two colors - "On" (shown when the configured device is the active one) and "Off" (shown otherwise, defaulting to a dimmed grey).
+- **Set Audio Device** has one icon with two colors - "On" (shown when the configured device is the active one - with direction "Both", when both its devices are) and "Off" (shown otherwise, defaulting to a dimmed grey).
 - **Toggle Audio Device** has two icons - one per device it switches between - each with its own color, defaulting to white.
 
 Icon choices are picked up automatically from [`../shared/AudioDevicesIcons/`](../shared/AudioDevicesIcons/) (copied into the plugin at build time); each file must be a white silhouette on a transparent background (the colors above are applied by recoloring the shape at runtime, not by swapping images), and its filename becomes the option's name in the picker. Drop in a new `<name>.png` file there to add another choice without any code changes.

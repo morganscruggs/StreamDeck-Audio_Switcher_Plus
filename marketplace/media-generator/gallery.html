@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <title>Audio Switcher Gallery</title>
 <!-- Source for the Marketplace gallery PNGs (1920x960) and the app icon (288x288). Render with render.ps1;
-     each slide is selected by URL hash (#1..#5, #icon). Key images are the plugin's own icons from
+     each slide is selected by URL hash (#thumbnail, the listing card; #1..#4, the gallery; #icon). Key images are the plugin's own icons from
      shared/AudioDevicesIcons, recolored with a CSS mask the same way png-recolor.ts does (keep alpha, replace
      RGB). The settings panels are the real shared/propertyinspector/index.html, fed fake device data, so they
      stay true to the plugin when the PI changes. Device names are generic Windows ones, not real products.
@@ -121,8 +121,8 @@
   </div>
 </template>
 
-<!-- 1. Hero / thumbnail: the active keys and the devices they make active, in Windows-style sound input/output cards. -->
-<section class="slide" id="s1" style="flex-direction:column; justify-content:center; gap:56px;">
+<!-- Thumbnail (the listing card): the active keys and the devices they make active, in Windows-style sound input/output cards. -->
+<section class="slide" id="sthumbnail" style="flex-direction:column; justify-content:center; gap:56px;">
   <div style="display:flex; align-items:center; gap:36px;">
     <div data-appicon style="width:120px; height:120px; border-radius:24px;"></div>
     <div>
@@ -150,8 +150,8 @@
   </div>
 </section>
 
-<!-- 2. Toggle action -->
-<section class="slide" id="s2" style="flex-direction:column; align-items:center; justify-content:center;">
+<!-- 1. Toggle action -->
+<section class="slide" id="s1" style="flex-direction:column; align-items:center; justify-content:center;">
   <span class="tag">Toggle Audio Device</span>
   <h2 style="text-align:center;">One key, two devices</h2>
   <p class="lead" style="text-align:center; margin-top:14px;">Press to flip between headphones and speakers. The key shows which one is playing.</p>
@@ -164,8 +164,8 @@
   </div>
 </section>
 
-<!-- 3. Live status (Set action) -->
-<section class="slide" id="s3" style="flex-direction:column; align-items:center; justify-content:center;">
+<!-- 2. Live status (Set action) -->
+<section class="slide" id="s2" style="flex-direction:column; align-items:center; justify-content:center;">
   <span class="tag">Live status</span>
   <h2 style="text-align:center;">Know what's active at a glance</h2>
   <p class="lead" style="text-align:center; margin-top:14px;">Keys update the moment the device changes, even when you switch it in Windows.</p>
@@ -178,28 +178,29 @@
   </div>
 </section>
 
-<!-- 4. Settings: Device and Behavior sections of the real property inspector -->
-<section class="slide" id="s4" style="align-items:center; gap:90px;">
-  <div class="pi" data-pi='{"action":"toggle","sections":[0,1],"settings":{"direction":"output","role":"all","matchStrategy":"Fuzzy","primary":"out-hp","secondary":"out-spk","hideUnavailable":true,"hideDeviceType":false,"demoSwitchesUsed":3}}'></div>
+<!-- 3. Settings: Behavior and Devices sections of the real property inspector, for a Set key set to Both (a headset's
+     headphones and mic) -->
+<section class="slide" id="s3" style="align-items:center; gap:90px;">
+  <div class="pi" data-pi='{"action":"set","sections":[0,1],"maxHeight":800,"settings":{"direction":"both","role":"all","matchStrategy":"Fuzzy","primary":"out-hp","secondary":"in-hs","icon":"headphones","hideUnavailable":true,"hideDeviceType":false,"demoSwitchesUsed":3}}'></div>
   <div class="col">
     <span class="tag">Settings</span>
     <h2>Set it up in seconds</h2>
     <div class="callouts" style="margin-top:44px;">
-      <div class="callout"><div class="n">1</div><div><h3>Pick your devices</h3><p>Choose from your connected devices. Unplugged and disabled ones can be hidden.</p></div></div>
-      <div class="callout"><div class="n">2</div><div><h3>Output or input</h3><p>Switch speakers and headphones, or microphones.</p></div></div>
-      <div class="callout"><div class="n">3</div><div><h3>Choose the role</h3><p>Default, Communications for calling apps, or All for both.</p></div></div>
-      <div class="callout"><div class="n">4</div><div><h3>Follows your devices</h3><p>Fuzzy matching finds a device again after Windows renumbers it.</p></div></div>
+      <div class="callout"><div class="n">1</div><div><h3>Output, input or both</h3><p>Switch speakers, headphones or microphones, or a headset's headphones and mic in one press.</p></div></div>
+      <div class="callout"><div class="n">2</div><div><h3>Choose the role</h3><p>Default, Communications for calling apps, or All for both.</p></div></div>
+      <div class="callout"><div class="n">3</div><div><h3>Follows your devices</h3><p>Fuzzy matching finds a device again after Windows renumbers it.</p></div></div>
+      <div class="callout"><div class="n">4</div><div><h3>Pick your devices</h3><p>Choose from your connected devices and an icon for the key. Unplugged and disabled ones can be hidden.</p></div></div>
     </div>
   </div>
 </section>
 
-<!-- 5. Icons & colors: Icon appearance section of the real property inspector -->
-<section class="slide" id="s5" style="flex-direction:column; align-items:center; justify-content:center;">
+<!-- 4. Icons & colors: the Set action's Device & icon section of the real property inspector -->
+<section class="slide" id="s4" style="flex-direction:column; align-items:center; justify-content:center;">
   <span class="tag">Icons &amp; colors</span>
   <h2 style="text-align:center;">Make every key yours</h2>
   <p class="lead" style="text-align:center; margin-top:14px;">Pick an icon for each device and color it. Set keys get their own On and Off colors.</p>
   <div style="display:flex; gap:70px; align-items:center; margin-top:56px;">
-    <div class="pi" data-pi='{"action":"set","sections":[2],"settings":{"direction":"output","role":"all","matchStrategy":"Fuzzy","primary":"out-hp","icon":"headphones","iconBrightColor":"#4cc9f0","iconDarkColor":"#2a4752","hideUnavailable":true,"hideDeviceType":false,"demoSwitchesUsed":3}}'></div>
+    <div class="pi" data-pi='{"action":"set","sections":[1],"settings":{"direction":"output","role":"all","matchStrategy":"Fuzzy","primary":"out-hp","icon":"headphones","iconBrightColor":"#4cc9f0","iconDarkColor":"#2a4752","hideUnavailable":true,"hideDeviceType":false,"demoSwitchesUsed":3}}'></div>
     <div style="font-size:64px; color:var(--muted);">→</div>
     <div class="deck" style="--cols:3; --k:140px;" data-keys='[["headphones","#4cc9f0"],["speaker","#ff9f43"],["Earbuds","#3ddc84"],["headphones","#2a4752"],["mic","#ff6b9a"],["mic","#b388ff"]]'></div>
   </div>
@@ -262,7 +263,7 @@
   ]);
   const INPUTS = Object.fromEntries([
     dev("in-mic", "input", "Microphone", "USB Microphone"),
-    dev("in-hs", "input", "Headset Microphone", "USB Audio Device"),
+    dev("in-hs", "input", "Headset Microphone", "Gaming Headset"),
   ]);
   const ICON_LIST = ["earbuds", "headphones", "mic", "speaker"].map((id) => ({ id, label: id[0].toUpperCase() + id.slice(1) }));
 
@@ -283,8 +284,10 @@
 
   document.querySelectorAll(".pi[data-pi]").forEach((box) => {
     const cfg = JSON.parse(box.dataset.pi);
-    const devices = cfg.settings.direction === "input" ? INPUTS : OUTPUTS;
-    for (const k of ["primary", "secondary"]) if (cfg.settings[k]) cfg.settings[k] = devices[cfg.settings[k]];
+    // Both (Set only) picks its primary device from the outputs and its secondary from the inputs.
+    const direction = cfg.settings.direction;
+    const devicesFor = (k) => direction === "input" || (direction === "both" && k === "secondary") ? INPUTS : OUTPUTS;
+    for (const k of ["primary", "secondary"]) if (cfg.settings[k]) cfg.settings[k] = devicesFor(k)[cfg.settings[k]];
 
     const frame = document.createElement("iframe");
     frame.src = PI;
@@ -303,9 +306,12 @@
       doc.querySelector("footer").style.display = "none";
       setTimeout(() => {
         const h = doc.getElementById("mainWrapper").getBoundingClientRect().bottom + 6;
+        // Scaled down only when the panel would otherwise run off its slide (cfg.maxHeight, in slide pixels).
+        const zoom = Math.min(PI_ZOOM, (cfg.maxHeight || Infinity) / h);
+        frame.style.transform = `scale(${zoom})`;
         frame.style.height = h + "px";
-        box.style.width = PI_WIDTH * PI_ZOOM + "px";
-        box.style.height = h * PI_ZOOM + "px";
+        box.style.width = PI_WIDTH * zoom + "px";
+        box.style.height = h * zoom + "px";
       }, 50);
     };
   });
@@ -316,7 +322,7 @@
     document.querySelector("#sicon .appicon").insertAdjacentHTML("beforeend", `<div class="ribbon">DEMO</div>`);
   }
 
-  const n = location.hash.slice(1) || "1";
+  const n = location.hash.slice(1) || "thumbnail";
   document.getElementById("s" + n).classList.add("on");
 </script>
 </body>

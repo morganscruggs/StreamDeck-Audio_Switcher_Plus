@@ -39,11 +39,8 @@
       flex: 0 0 82px; text-align: right; color: var(--muted); font-size: 8.5pt;
     }
     .row > .ctl { flex: 1 1 auto; min-width: 0; display: flex; gap: 6px; align-items: center; }
-    .stack { display: block; margin-bottom: 5px; }
-    .stack > label { display: block; color: var(--muted); font-size: 8.5pt; margin-bottom: 2px; }
-    /* A picker's heading with its own color swatch and Reset beside it (Toggle's primary/secondary). */
-    .stack-head { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
-    .stack-head > label { color: var(--muted); font-size: 8.5pt; }
+    /* Sets off a device (with its icon) or the list options from what's above them in the same section. */
+    .group { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 6px; }
 
     select {
       background: var(--field); color: var(--fg); border: 1px solid #4a4a4a;
@@ -72,9 +69,10 @@
     .seg input { display: none; }
     .seg label {
       background: #333; color: var(--muted); padding: 2px 12px; font-size: 8.5pt;
-      cursor: pointer; user-select: none; border-right: 1px solid var(--line);
+      cursor: pointer; user-select: none; border-left: 1px solid var(--line);
     }
-    .seg label:last-child { border-right: 0; }
+    /* Divided on the left, so hiding the last choice (Direction's Both, on Toggle) leaves no stray edge. */
+    .seg label:first-of-type { border-left: 0; }
     .seg input:checked + label { background: #46617f; color: #eaf2fb; }
 
     /* The demo's notes, styled like Multi Volume Controller's demo limit note (.app-limit-note there). */
@@ -93,7 +91,6 @@
 
     /* Explanations stay hidden unless "Show help text" is ticked (stored in global settings). */
     .hint { display: none; color: var(--muted); font-size: 8pt; margin: -1px 0 5px 90px; }
-    .hint.full { margin-left: 0; }
     .hint.check-hint { margin-left: 19px; }
     body.show-help .hint { display: block; }
     .help-toggle { margin-top: 6px; }
@@ -164,50 +161,6 @@
     </div>
 
     <details open>
-      <summary id="devicesSummary">Device</summary>
-      <div class="body">
-        <details class="sub" id="deviceDetails" ontoggle="updateDeviceDetailsOpen();">
-          <summary>Device details</summary>
-          <div class="body">
-            <div class="card-heading" id="primaryDeviceInfoHeading">Primary</div>
-            <div class="card" id="primaryDeviceInfo"></div>
-            <div id="secondaryDeviceInfoDiv">
-              <div class="card-heading">Secondary</div>
-              <div class="card" id="secondaryDeviceInfo"></div>
-            </div>
-          </div>
-        </details>
-
-        <div class="row">
-          <label id="primaryDeviceLabel" for="primaryDevice">Device</label>
-          <div class="ctl">
-            <select id="primaryDevice" onchange="saveSettings();"></select>
-          </div>
-        </div>
-
-        <div id="secondaryDeviceDiv">
-          <div class="row">
-            <label for="secondaryDevice">Secondary</label>
-            <div class="ctl">
-              <select id="secondaryDevice" onchange="saveSettings();"></select>
-            </div>
-          </div>
-        </div>
-
-        <div class="check">
-          <input id="hideUnavailable" type="checkbox" onchange="updateHideUnavailable();" />
-          <label for="hideUnavailable">Hide disabled and unplugged devices</label>
-        </div>
-        <div class="hint check-hint">Leaves disabled and unplugged devices out of the list. Devices Windows no longer sees are never listed.</div>
-        <div class="check">
-          <input id="hideDeviceType" type="checkbox" onchange="updateHideDeviceType();" />
-          <label for="hideDeviceType">Hide device type</label>
-        </div>
-        <div class="hint check-hint">Lists devices by interface name only, without the device type (endpoint name). A device renamed in Windows keeps its name in the list unless this is ticked.</div>
-      </div>
-    </details>
-
-    <details open>
       <summary>Behavior</summary>
       <div class="body">
         <div class="row">
@@ -218,9 +171,12 @@
               <label for="output">Output</label>
               <input id="input" type="radio" name="direction" value="input" onchange="updateDirection();" />
               <label for="input">Input</label>
+              <input id="both" type="radio" name="direction" value="both" onchange="updateDirection();" />
+              <label for="both" id="bothLabel">Both</label>
             </div>
           </div>
         </div>
+        <div class="hint" id="directionHint">Both sets an output and an input device with one press, such as a headset's headphones and microphone. The key is on while both are active.</div>
 
         <div class="row">
           <label>Role</label>
@@ -253,39 +209,96 @@
     </details>
 
     <details open>
-      <summary>Icon appearance</summary>
+      <summary id="devicesSummary">Device</summary>
       <div class="body">
-        <div class="stack" id="iconDiv">
-          <div class="grid" id="iconPicker"></div>
-        </div>
-        <div class="row" id="iconColorDiv">
-          <label>Colors</label>
+        <details class="sub" id="deviceDetails" ontoggle="updateDeviceDetailsOpen();">
+          <summary>Device details</summary>
+          <div class="body">
+            <div class="card-heading" id="primaryDeviceInfoHeading">Primary</div>
+            <div class="card" id="primaryDeviceInfo"></div>
+            <div id="secondaryDeviceInfoDiv">
+              <div class="card-heading" id="secondaryDeviceInfoHeading">Secondary</div>
+              <div class="card" id="secondaryDeviceInfo"></div>
+            </div>
+          </div>
+        </details>
+
+        <div class="row">
+          <label id="primaryDeviceLabel" for="primaryDevice">Device</label>
           <div class="ctl">
-            <span>On</span>
-            <input type="color" id="iconBrightColor" onchange="updateIconColor('iconBrightColor');" />
-            <span>Off</span>
-            <input type="color" id="iconDarkColor" onchange="updateIconColor('iconDarkColor');" />
-            <button class="link" onclick="resetIconColors();">Reset</button>
+            <select id="primaryDevice" onchange="saveSettings();"></select>
           </div>
         </div>
 
-        <div class="stack" id="primaryIconDiv">
-          <div class="stack-head">
-            <label>Primary</label>
-            <input type="color" id="primaryIconColor" onchange="updateIconColor('primaryIconColor');" />
-            <button class="link" onclick="resetIconColor('primaryIconColor');">Reset</button>
+        <!-- Toggle: each device's icon sits under that device. -->
+        <div id="primaryIconDiv">
+          <div class="row">
+            <label>Icon</label>
+            <div class="ctl"><div class="grid" id="primaryIconPicker"></div></div>
           </div>
-          <div class="grid" id="primaryIconPicker"></div>
-        </div>
-        <div class="stack" id="secondaryIconDiv">
-          <div class="stack-head">
-            <label>Secondary</label>
-            <input type="color" id="secondaryIconColor" onchange="updateIconColor('secondaryIconColor');" />
-            <button class="link" onclick="resetIconColor('secondaryIconColor');">Reset</button>
+          <div class="row">
+            <label>Color</label>
+            <div class="ctl">
+              <input type="color" id="primaryIconColor" onchange="updateIconColor('primaryIconColor');" />
+              <button class="link" onclick="resetIconColor('primaryIconColor');">Reset</button>
+            </div>
           </div>
-          <div class="grid" id="secondaryIconPicker"></div>
         </div>
-        <div class="hint full">Leave a color untouched to keep the icon's own.</div>
+
+        <!-- Toggle's second device, or the input of a Set key set to Both. -->
+        <div class="group" id="secondaryDeviceDiv">
+          <div class="row">
+            <label id="secondaryDeviceLabel" for="secondaryDevice">Secondary</label>
+            <div class="ctl">
+              <select id="secondaryDevice" onchange="saveSettings();"></select>
+            </div>
+          </div>
+          <div id="secondaryIconDiv">
+            <div class="row">
+              <label>Icon</label>
+              <div class="ctl"><div class="grid" id="secondaryIconPicker"></div></div>
+            </div>
+            <div class="row">
+              <label>Color</label>
+              <div class="ctl">
+                <input type="color" id="secondaryIconColor" onchange="updateIconColor('secondaryIconColor');" />
+                <button class="link" onclick="resetIconColor('secondaryIconColor');">Reset</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Set: the key's one icon, lit in the On color while its device (or, in Both, its two) is active. -->
+        <div id="iconDiv">
+          <div class="row">
+            <label>Icon</label>
+            <div class="ctl"><div class="grid" id="iconPicker"></div></div>
+          </div>
+          <div class="row">
+            <label>Colors</label>
+            <div class="ctl">
+              <span>On</span>
+              <input type="color" id="iconBrightColor" onchange="updateIconColor('iconBrightColor');" />
+              <span>Off</span>
+              <input type="color" id="iconDarkColor" onchange="updateIconColor('iconDarkColor');" />
+              <button class="link" onclick="resetIconColors();">Reset</button>
+            </div>
+          </div>
+        </div>
+        <div class="hint">Leave a color untouched to keep the icon's own.</div>
+
+        <div class="group">
+          <div class="check">
+            <input id="hideUnavailable" type="checkbox" onchange="updateHideUnavailable();" />
+            <label for="hideUnavailable">Hide disabled and unplugged devices</label>
+          </div>
+          <div class="hint check-hint">Leaves disabled and unplugged devices out of the list. Devices Windows no longer sees are never listed.</div>
+          <div class="check">
+            <input id="hideDeviceType" type="checkbox" onchange="updateHideDeviceType();" />
+            <label for="hideDeviceType">Hide device type</label>
+          </div>
+          <div class="hint check-hint">Lists devices by interface name only, without the device type (endpoint name). A device renamed in Windows keeps its name in the list unless this is ticked.</div>
+        </div>
       </div>
     </details>
 
@@ -329,18 +342,44 @@
       return name.replace(/(^|\()[0-9]+- /, '$1');
     }
 
-    function updateDeviceLists(devices) {
-      const primarySelector = document.getElementById('primaryDevice');
-      const secondarySelector = document.getElementById('secondaryDevice');
+    // "output", "input", or - Set only - "both", which picks an output as the primary device and an input as the
+    // secondary one.
+    function currentDirection() {
+      if (document.getElementById('both').checked) return 'both';
+      return document.getElementById('input').checked ? 'input' : 'output';
+    }
 
-      const primary = settings['primary'];
-      const primaryId = (typeof primary == 'object' && primary) ? primary.id : primary;
-      const secondary = settings['secondary'];
-      const secondaryId = (typeof secondary == 'object' && secondary) ? secondary.id : secondary;
-      // A device saved while the other direction was selected must not be carried over as a phantom
-      // option (it would show up as a duplicate with the label saved from that other direction).
-      const direction = devices === inputDevices ? 'input' : 'output';
-      const belongsHere = (device) => !(typeof device == 'object' && device && device.direction && device.direction !== direction);
+    // The direction a device slot ("primary"/"secondary") is picked from.
+    function slotDirection(slot) {
+      const direction = currentDirection();
+      if (direction !== 'both') return direction;
+      return slot === 'primary' ? 'output' : 'input';
+    }
+
+    function devicesFor(direction) {
+      return direction === 'input' ? inputDevices : outputDevices;
+    }
+
+    function savedDeviceId(slot) {
+      const device = settings[slot];
+      return (typeof device == 'object' && device) ? device.id : device;
+    }
+
+    function savedDeviceDirection(slot) {
+      const device = settings[slot];
+      return (typeof device == 'object' && device) ? device.direction : undefined;
+    }
+
+    function updateDeviceLists() {
+      fillDeviceList('primary');
+      fillDeviceList('secondary');
+    }
+
+    function fillDeviceList(slot) {
+      const selector = document.getElementById(`${slot}Device`);
+      const direction = slotDirection(slot);
+      const devices = devicesFor(direction);
+      const selectedId = savedDeviceId(slot);
 
       const state_sort = {
         "connected": 0,
@@ -349,10 +388,7 @@
         "device_disabled": 3,
       };
 
-      while (primarySelector.firstChild) {
-        primarySelector.removeChild(primarySelector.firstChild);
-        secondarySelector.removeChild(secondarySelector.firstChild);
-      }
+      while (selector.firstChild) selector.removeChild(selector.firstChild);
 
       const sortedIds = Object.keys(devices).sort((a_id, b_id) => {
         const a = devices[a_id];
@@ -368,9 +404,6 @@
       sortedIds.forEach(deviceId => {
         const device = devices[deviceId];
 
-        const isPrimary = (deviceId === primaryId);
-        const isSecondary = (deviceId === secondaryId);
-
         const hideUnavailable = document.getElementById('hideUnavailable').checked;
         const isShownByDefault = device.state === "connected"
           || (!hideUnavailable && device.state === "device_present_no_connection");
@@ -383,36 +416,27 @@
           "device_not_present": " (not present)",
           "device_disabled": " (disabled)"
         }[device.state];
-        const primaryOption = document.createElement("option");
-        primaryOption.setAttribute("value", deviceId);
-        primaryOption.setAttribute("label", displayName);
-        const secondaryOption = primaryOption.cloneNode();
-
-        if (isPrimary) primaryOption.setAttribute("selected", true);
-        if (isSecondary) secondaryOption.setAttribute("selected", true);
-
-        primarySelector.appendChild(primaryOption);
-        secondarySelector.appendChild(secondaryOption);
+        const option = document.createElement("option");
+        option.setAttribute("value", deviceId);
+        option.setAttribute("label", displayName);
+        if (deviceId === selectedId) option.setAttribute("selected", true);
+        selector.appendChild(option);
       });
-      if (primaryId && belongsHere(primary) && !primarySelector.querySelector(`option[value="${primaryId}"]`)) {
+
+      // A saved device that isn't listed (hidden, or no longer seen by Windows) stays as an option of its own,
+      // labelled as it was saved. Toggle picks both its devices from the one list, so each list offers both. A
+      // device saved while the other direction was selected must not be carried over (it would show up as a
+      // duplicate with the label saved from that other direction).
+      for (const other of ['primary', 'secondary']) {
+        const id = savedDeviceId(other);
+        const savedDirection = savedDeviceDirection(other);
+        if (!id || slotDirection(other) !== direction || (savedDirection && savedDirection !== direction)) continue;
+        if (selector.querySelector(`option[value="${id}"]`)) continue;
         const opt = document.createElement("option");
-        opt.setAttribute("value", primaryId);
-        opt.setAttribute("selected", "selected");
-        opt.setAttribute("label", settings["primaryLabel"] || primaryId);
-        primarySelector.appendChild(opt);
-        const cloned = opt.cloneNode();
-        if (primaryId != secondaryId) cloned.removeAttribute('selected');
-        secondarySelector.appendChild(cloned);
-      }
-      if (secondaryId && belongsHere(secondary) && primaryId != secondaryId && !secondarySelector.querySelector(`option[value="${secondaryId}"]`)) {
-        const opt = document.createElement("option");
-        opt.setAttribute("value", secondaryId);
-        opt.setAttribute("selected", "selected");
-        opt.setAttribute("label", settings["secondaryLabel"] || secondaryId);
-        secondarySelector.appendChild(opt);
-        const cloned = opt.cloneNode();
-        cloned.removeAttribute('selected');
-        primarySelector.appendChild(cloned);
+        opt.setAttribute("value", id);
+        opt.setAttribute("label", settings[`${other}Label`] || id);
+        if (id === selectedId) opt.setAttribute("selected", "selected");
+        selector.appendChild(opt);
       }
     }
 
@@ -472,18 +496,33 @@
     }
 
     function updateDirection() {
-      updateDeviceLists(document.getElementById('input').checked ? inputDevices : outputDevices);
+      // A Set key's device follows it to whichever slot now holds its direction: Both keeps the output in the
+      // first slot and the input in the second, so an input moves to the second going into Both and back out.
+      if (isSetAction) {
+        const direction = currentDirection();
+        if (direction === 'both' && savedDeviceDirection('primary') === 'input') copyDevice('primary', 'secondary');
+        else if (direction === 'input' && savedDeviceDirection('primary') !== 'input' && savedDeviceDirection('secondary') === 'input') {
+          copyDevice('secondary', 'primary');
+        }
+      }
+      setupForDirection();
+      updateDeviceLists();
       renderAllIconPickers();
       saveSettings();
     }
 
+    function copyDevice(from, to) {
+      settings[to] = settings[from];
+      settings[`${to}Label`] = settings[`${from}Label`];
+    }
+
     function updateHideUnavailable() {
-      updateDeviceLists(document.getElementById('input').checked ? inputDevices : outputDevices);
+      updateDeviceLists();
       saveSettings();
     }
 
     function updateHideDeviceType() {
-      updateDeviceLists(document.getElementById('input').checked ? inputDevices : outputDevices);
+      updateDeviceLists();
       saveSettings();
     }
 
@@ -492,9 +531,9 @@
       while (picker.firstChild) picker.removeChild(picker.firstChild);
 
       const selectedIcon = settings[settingsKey] || defaultId;
-      const isInput = document.getElementById('input').checked;
-      // Speakers are output-only and mics are input-only, so hide whichever doesn't apply.
-      const hiddenIconId = isInput ? 'speaker' : 'mic';
+      const direction = currentDirection();
+      // Speakers are output-only and mics are input-only, so hide whichever doesn't apply (Both takes either).
+      const hiddenIconId = { input: 'speaker', output: 'mic' }[direction];
 
       (availableIcons || []).forEach(icon => {
         if (icon.id === hiddenIconId) return;
@@ -571,9 +610,8 @@
 
       if (payload.event !== "getDeviceList") return;
 
-      const isInput = settings.direction === "input";
-      document.getElementById('input').checked = isInput;
-      document.getElementById('output').checked = !isInput;
+      const direction = settings.direction === "input" || (settings.direction === "both" && isSetAction) ? settings.direction : "output";
+      document.getElementById(direction).checked = true;
 
       const role = settings.role || "all";
       document.getElementById('communicationRole').checked = role === "communication";
@@ -590,23 +628,22 @@
       inputDevices = payload.inputDevices;
       outputDevices = payload.outputDevices;
 
-      updateDeviceLists(isInput ? inputDevices : outputDevices);
+      setupForDirection();
+      updateDeviceLists();
       renderAllIconPickers();
       document.getElementById('mainWrapper').classList.remove('hidden');
       saveSettings();
     }
 
     function saveSettings() {
-      const isInput = document.getElementById('input').checked;
-      const devices = isInput ? inputDevices : outputDevices;
       const primaryId = document.getElementById('primaryDevice').value;
       const secondaryId = document.getElementById('secondaryDevice').value;
       // An empty ID means the list is empty.
-      settings.primary = devices[primaryId];
+      settings.primary = devicesFor(slotDirection('primary'))[primaryId];
       settings.primaryLabel = primaryId ? document.querySelector(`#primaryDevice option[value="${primaryId}"]`)?.label : undefined;
-      settings.secondary = devices[secondaryId];
+      settings.secondary = devicesFor(slotDirection('secondary'))[secondaryId];
       settings.secondaryLabel = secondaryId ? document.querySelector(`#secondaryDevice option[value="${secondaryId}"]`)?.label : undefined;
-      settings.direction = isInput ? 'input' : 'output';
+      settings.direction = currentDirection();
       if (document.getElementById('allRole').checked) settings.role = 'all';
       else if (document.getElementById('communicationRole').checked) settings.role = 'communication';
       else settings.role = 'default';
@@ -621,15 +658,29 @@
     }
 
     function setupForAction() {
-      document.getElementById('devicesSummary').textContent = isSetAction ? 'Device' : 'Devices';
-      document.getElementById('primaryDeviceLabel').textContent = isSetAction ? 'Device' : 'Primary';
-      document.getElementById('secondaryDeviceDiv').classList.toggle('hidden', isSetAction);
-      document.getElementById('secondaryDeviceInfoDiv').classList.toggle('hidden', isSetAction);
-      document.getElementById('primaryDeviceInfoHeading').classList.toggle('hidden', isSetAction);
+      document.getElementById('bothLabel').classList.toggle('hidden', !isSetAction);
+      document.getElementById('directionHint').classList.toggle('hidden', !isSetAction);
       document.getElementById('iconDiv').classList.toggle('hidden', !isSetAction);
-      document.getElementById('iconColorDiv').classList.toggle('hidden', !isSetAction);
       document.getElementById('primaryIconDiv').classList.toggle('hidden', isSetAction);
       document.getElementById('secondaryIconDiv').classList.toggle('hidden', isSetAction);
+      // Toggle's second device is set apart from the first along with its icon; Set's Both lists its input right
+      // under its output, ahead of the key's one icon.
+      document.getElementById('secondaryDeviceDiv').classList.toggle('group', !isSetAction);
+      setupForDirection();
+    }
+
+    // What also depends on the direction: Set's Both picks two devices, an output and an input.
+    function setupForDirection() {
+      const twoDevices = !isSetAction || currentDirection() === 'both';
+      document.getElementById('devicesSummary').textContent =
+        !isSetAction ? 'Devices & icons' : twoDevices ? 'Devices & icon' : 'Device & icon';
+      document.getElementById('primaryDeviceLabel').textContent = !isSetAction ? 'Primary' : twoDevices ? 'Output' : 'Device';
+      document.getElementById('secondaryDeviceLabel').textContent = isSetAction ? 'Input' : 'Secondary';
+      document.getElementById('primaryDeviceInfoHeading').textContent = isSetAction ? 'Output' : 'Primary';
+      document.getElementById('secondaryDeviceInfoHeading').textContent = isSetAction ? 'Input' : 'Secondary';
+      document.getElementById('secondaryDeviceDiv').classList.toggle('hidden', !twoDevices);
+      document.getElementById('secondaryDeviceInfoDiv').classList.toggle('hidden', !twoDevices);
+      document.getElementById('primaryDeviceInfoHeading').classList.toggle('hidden', !twoDevices);
     }
 
     // The demo has every feature, but each key only switches devices a few times - the plugin counts them in

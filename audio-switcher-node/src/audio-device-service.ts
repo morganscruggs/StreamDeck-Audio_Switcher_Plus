@@ -102,13 +102,16 @@ class AudioDeviceService {
 	}
 
 	/**
-	 * Sets the default device for each role, then refreshes once so buttons reflect it right away. Refreshing
-	 * only after the last role means no button sees a half-switched snapshot (e.g. the new default device but
-	 * the old communications one), which would flip "All" buttons back and forth mid-switch.
+	 * Sets each device (one per direction - Set's "both" passes an output and an input) as the default for each
+	 * role, then refreshes once so buttons reflect it right away. Refreshing only after the last one means no
+	 * button sees a half-switched snapshot (e.g. the new default device but the old communications one), which
+	 * would flip "All" buttons back and forth mid-switch.
 	 */
-	async setDefaultDevice(roles: AudioDeviceRole[], deviceId: string): Promise<boolean> {
+	async setDefaultDevices(roles: AudioDeviceRole[], deviceIds: string[]): Promise<boolean> {
 		let ok = true;
-		for (const role of roles) ok = (await this.bridge.setDefaultDevice(role, deviceId)) && ok;
+		for (const deviceId of deviceIds) {
+			for (const role of roles) ok = (await this.bridge.setDefaultDevice(role, deviceId)) && ok;
+		}
 		// A refresh already in flight may have read the state from before the switch, so wait it out and
 		// read again rather than sharing its result.
 		while (this.refreshInFlight) await this.refreshInFlight.catch(() => undefined);

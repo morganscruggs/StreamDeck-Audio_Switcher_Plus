@@ -1,7 +1,8 @@
 # Renders gallery.html with headless Edge, once per listing, into that listing's own folder next to this one: the
 # full version into ..\full\, and the demo version (gallery.html?demo) into ..\demo\. Each slide id maps to section
-# #s<id> and is written as gallery-<id>.png (1920x960, Elgato Marketplace gallery/thumbnail size); #icon is the
-# 288x288 Marketplace app icon, written as icon.png.
+# #s<id>: #thumbnail is the listing card, written as thumbnail.png; #1..#4 are the gallery, written as
+# gallery-<id>.png (all 1920x960, Elgato Marketplace thumbnail/gallery size); #icon is the 288x288 Marketplace app
+# icon, written as icon.png.
 $edge = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
 $html = (Resolve-Path "$PSScriptRoot\gallery.html").Path
 $uri = ([System.Uri]$html).AbsoluteUri
@@ -20,7 +21,11 @@ foreach ($edition in @("full", "demo")) {
     New-Item -ItemType Directory -Force $dir | Out-Null
     $query = if ($edition -eq "demo") { "?demo" } else { "" }
 
-    foreach ($n in @("1", "2", "3", "4", "5")) {
+    # Clear out the old gallery first, so a slide that's been dropped or renumbered doesn't leave its image behind.
+    Remove-Item (Join-Path $dir "gallery-*.png") -ErrorAction SilentlyContinue
+
+    Render "$uri$query#thumbnail" "1920,960" (Join-Path $dir "thumbnail.png")
+    foreach ($n in @("1", "2", "3", "4")) {
         Render "$uri$query#$n" "1920,960" (Join-Path $dir ("gallery-{0}.png" -f $n))
     }
     Render "$uri$query#icon" "288,288" (Join-Path $dir "icon.png")

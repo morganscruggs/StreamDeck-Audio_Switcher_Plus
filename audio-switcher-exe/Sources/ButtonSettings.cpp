@@ -52,7 +52,12 @@ void from_json(const nlohmann::json& j, ButtonSettings& bs) {
     return;
   }
 
-  bs.direction = j.at("direction");
+  if (j.at("direction") == "both") {
+    bs.bothDirections = true;
+    bs.direction = AudioDeviceDirection::OUTPUT;
+  } else {
+    bs.direction = j.at("direction");
+  }
 
   if (j.contains("role")) {
     bs.role = j.at("role");
@@ -111,7 +116,8 @@ void from_json(const nlohmann::json& j, ButtonSettings& bs) {
 
 void to_json(nlohmann::json& j, const ButtonSettings& bs) {
   j = {
-    {"direction", bs.direction},
+    {"direction",
+     bs.bothDirections ? nlohmann::json("both") : nlohmann::json(bs.direction)},
     {"role", bs.role},
     {"primary", bs.primaryDevice},
     {"secondary", bs.secondaryDevice},

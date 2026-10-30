@@ -76,6 +76,49 @@ AudioDeviceRole AudioDeviceRoleFromButtonRole(const ButtonRole role) {
   }
 }
 
+// Whether `deviceID` is already the device for every role the button sets.
+bool IsActiveForRole(
+  const AudioDeviceDirection direction,
+  const ButtonRole role,
+  const std::string& deviceID) {
+  if (role == ButtonRole::ALL) {
+    return deviceID
+      == GetDefaultAudioDeviceID(direction, AudioDeviceRole::DEFAULT)
+      && deviceID
+      == GetDefaultAudioDeviceID(direction, AudioDeviceRole::COMMUNICATION);
+  }
+  return deviceID
+    == GetDefaultAudioDeviceID(direction, AudioDeviceRoleFromButtonRole(role));
+}
+
+void SetDefaultForRole(
+  const AudioDeviceDirection direction,
+  const ButtonRole role,
+  const std::string& deviceID) {
+  if (role == ButtonRole::ALL) {
+    SetDefaultAudioDeviceID(direction, AudioDeviceRole::DEFAULT, deviceID);
+    SetDefaultAudioDeviceID(
+      direction, AudioDeviceRole::COMMUNICATION, deviceID);
+    return;
+  }
+  SetDefaultAudioDeviceID(
+    direction, AudioDeviceRoleFromButtonRole(role), deviceID);
+}
+
+// The "Set" action's "both": its configured devices, the output then the
+// input, each with its direction.
+std::vector<std::pair<AudioDeviceDirection, std::string>> BothDevices(
+  const ButtonSettings& settings) {
+  std::vector<std::pair<AudioDeviceDirection, std::string>> devices;
+  if (auto id = settings.VolatilePrimaryID(); !id.empty()) {
+    devices.emplace_back(AudioDeviceDirection::OUTPUT, std::move(id));
+  }
+  if (auto id = settings.VolatileSecondaryID(); !id.empty()) {
+    devices.emplace_back(AudioDeviceDirection::INPUT, std::move(id));
+  }
+  return devices;
+}
+
 constexpr std::string_view SET_ACTION_ID{
   "com.morganscruggs.audioswitcherplus.set"};
 constexpr std::string_view TOGGLE_ACTION_ID{
@@ -277,7 +320,8 @@ void AudioSwitcherStreamDeckPlugin::OnDefaultDeviceChanged(
   const std::string& device) {
   std::scoped_lock lock(mButtonsMutex);
   for (const auto& [context, button] : mButtons) {
-    if (button.settings.direction != direction) {
+    if (!button.settings.bothDirections
+        && button.settings.direction != direction) {
       continue;
     }
     const auto buttonRole = ButtonRoleFromAudioDeviceRole(role);
@@ -307,6 +351,40 @@ void AudioSwitcherStreamDeckPlugin::KeyUpForAction(
   FillButtonDeviceInfo(inContext);
 
   const auto state = EPLJSONUtils::GetIntByName(inPayload, "state");
+
+  if (settings.bothDirections) {
+    // Sets the output and the input device together. One that's unplugged
+    // is skipped with an alert rather than holding back the other.
+    const auto devices = BothDevices(settings);
+    if (devices.empty()) {
+      ESDDebug("Doing nothing, no device ID");
+      return;
+    }
+    bool missing = false;
+    bool changed = false;
+    for (const auto& [direction, deviceID]: devices) {
+      if (GetAudioDeviceState(deviceID) != AudioDeviceState::CONNECTED) {
+        missing = true;
+        continue;
+      }
+      if (IsActiveForRole(direction, settings.role, deviceID)) {
+        continue;
+      }
+      ESDDebug("Setting device to {}", deviceID);
+      SetDefaultForRole(direction, settings.role, deviceID);
+      changed = true;
+    }
+    if (missing) {
+      mConnectionManager->SetState(1, inContext);
+      mConnectionManager->ShowAlertForContext(inContext);
+    } else if (!changed) {
+      // We already have the correct devices, undo the state change
+      mConnectionManager->SetState(state, inContext);
+      ESDDebug("Already set, nothing to do");
+    }
+    return;
+  }
+
   // this looks inverted - but if state is 0, we want to move to state 1, so
   // we want the secondary devices. if state is 1, we want state 0, so we want
   // the primary device
@@ -327,47 +405,17 @@ void AudioSwitcherStreamDeckPlugin::KeyUpForAction(
     return;
   }
 
-  if (inAction == SET_ACTION_ID) {
-    if (settings.role == ButtonRole::ALL) {
-      const auto alreadySet = deviceID == GetDefaultAudioDeviceID(
-                                settings.direction,
-                                AudioDeviceRole::DEFAULT)
-        && deviceID == GetDefaultAudioDeviceID(
-          settings.direction,
-          AudioDeviceRole::COMMUNICATION);
-      if (alreadySet) {
-        // We already have the correct device, undo the state change
-        mConnectionManager->SetState(state, inContext);
-        ESDDebug("Already set, nothing to do");
-        return;
-      }
-    } else if (
-      deviceID
-      == GetDefaultAudioDeviceID(
-        settings.direction,
-        AudioDeviceRoleFromButtonRole(settings.role))) {
-      mConnectionManager->SetState(state, inContext);
-      ESDDebug("Already set, nothing to do");
-      return;
-    }
+  if (
+    inAction == SET_ACTION_ID
+    && IsActiveForRole(settings.direction, settings.role, deviceID)) {
+    // We already have the correct device, undo the state change
+    mConnectionManager->SetState(state, inContext);
+    ESDDebug("Already set, nothing to do");
+    return;
   }
 
   ESDDebug("Setting device to {}", deviceID);
-  if (settings.role == ButtonRole::ALL) {
-    SetDefaultAudioDeviceID(
-      settings.direction,
-      AudioDeviceRole::DEFAULT,
-      deviceID);
-    SetDefaultAudioDeviceID(
-      settings.direction,
-      AudioDeviceRole::COMMUNICATION,
-      deviceID);
-    return;
-  }
-  SetDefaultAudioDeviceID(
-    settings.direction,
-    AudioDeviceRoleFromButtonRole(settings.role),
-    deviceID);
+  SetDefaultForRole(settings.direction, settings.role, deviceID);
 }
 
 void AudioSwitcherStreamDeckPlugin::WillAppearForAction(
@@ -551,6 +599,19 @@ void AudioSwitcherStreamDeckPlugin::UpdateState(
   }
   const auto& action = it->second.action;
   const auto& settings = it->second.settings;
+
+  if (settings.bothDirections) {
+    // On only while its output and its input are both active; one left
+    // unset doesn't count against it.
+    const auto devices = BothDevices(settings);
+    const auto on = !devices.empty()
+      && std::ranges::all_of(devices, [&settings](const auto& device) {
+           return IsActiveForRole(device.first, settings.role, device.second);
+         });
+    mConnectionManager->SetState(on ? 0 : 1, context);
+    return;
+  }
+
   const auto primaryID = settings.VolatilePrimaryID();
   const auto secondaryID = settings.VolatileSecondaryID();
 
