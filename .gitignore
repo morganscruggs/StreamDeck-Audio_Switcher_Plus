@@ -17,5 +17,9 @@ build/
 # The demo's folder (Node only) is generated whole by its build; its manifest is derived from the full one.
 /com.morgan-scruggs.audioswitcherplus-node-demo.sdPlugin/
 
+# Windows' own Sound icon, read from Windows by marketplace/media-generator/render.ps1 for the gallery - it's
+# Microsoft's artwork, so it isn't kept here.
+/marketplace/media-generator/windows-sound.js
+
 # Windows Explorer thumbnail caches
 Thumbs.db

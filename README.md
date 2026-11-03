@@ -42,11 +42,11 @@ powershell -ExecutionPolicy Bypass -File build-all.ps1
 powershell -ExecutionPolicy Bypass -File install.ps1
 ```
 
-[`build-all.ps1`](build-all.ps1) builds the Node plugin, the Node demo and the exe and packages all three into [`marketplace/`](marketplace/) (Node and exe into `full/`, the demo into `demo/`; add `-SkipPackage` to skip this). It never touches Stream Deck, which keeps running throughout. [`install.ps1`](install.ps1) then quits Stream Deck just long enough to copy whatever's been built into its Plugins folder, and starts it again - even if the copy fails. So build as often as you like, and install when you want to try the result. They need the same tools as the individual builds: Node.js, CMake and Visual Studio 2022's C++ workload.
+[`build-all.ps1`](build-all.ps1) builds the Node plugin, the Node demo and the exe and packages all three into [`marketplace/`](marketplace/) (the Node plugin into `full/`, the demo into `demo/` and the exe into `exe/`; add `-SkipPackage` to skip this). It never touches Stream Deck, which keeps running throughout. [`install.ps1`](install.ps1) then quits Stream Deck just long enough to copy whatever's been built into its Plugins folder, and starts it again - even if the copy fails. So build as often as you like, and install when you want to try the result. They need the same tools as the individual builds: Node.js, CMake and Visual Studio 2022's C++ workload.
 
 ## Releasing
 
-CI builds, tests and packages both plugins on every push. To release, bump [`shared/VERSION`](shared/VERSION), commit, and push a matching tag (`0.2.0` or `v0.2.0`; a `-suffix` such as `0.2.0-beta1` marks a prerelease). That drafts a GitHub release with both `.streamDeckPlugin` files and the exe's debug symbols attached; the release job fails if the tag doesn't match `shared/VERSION`.
+CI builds, tests and packages both plugins on every push. To release, bump [`shared/VERSION`](shared/VERSION), add the version's changes to the top of each package's changelog ([`full`](marketplace/full/CHANGELOG.md), [`demo`](marketplace/demo/CHANGELOG.md) and [`exe`](marketplace/exe/CHANGELOG.md); the full and demo ones are also the listings' release notes in Maker Console), commit, and push a matching tag (`0.2.0` or `v0.2.0`; a `-suffix` such as `0.2.0-beta1` marks a prerelease). That drafts a GitHub release with both `.streamDeckPlugin` files and the exe's debug symbols attached; the release job fails if the tag doesn't match `shared/VERSION`.
 
 ## Notes
 

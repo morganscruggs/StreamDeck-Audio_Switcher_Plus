@@ -1,22 +1,25 @@
-Audio Switcher Plus changes your Windows audio device from a Stream Deck key. Flip between headphones and speakers with one press, or give each device its own key. Every key shows which device is active, so you always know where your sound is going. Works for microphones too.
+Free demo (every feature, 10 switches per key):
+https://marketplace.elgato.com/product/audio-switcher-plus-demo-9d3f512f-8012-448d-ba35-d2c10805451d
+
+Audio Switcher Plus changes your Windows audio device from a Stream Deck key. Flip between headphones and speakers with one press, or give each device its own key. Every key shows which device is active. Works for microphones too.
 
 Features
 • Toggle Audio Device: one key flips between two devices (with Both, each brings its own mic)
 • Set Audio Device: one key per device, lit while that device is active
-• Output, input or both: switch speakers and headphones, microphones, or a headset's headphones and mic together
+• Output, input or both: e.g. a headset's headphones and mic together
 • Role: Default, Communications (calling apps), or All for both
-• Live status: keys update the moment the device changes, even when you switch it in Windows
-• Follows your devices: finds a device again after Windows renumbers it (e.g. "2- Headphones")
-• Clean device list: hide unplugged and disabled devices, and device-type names
+• Live status: keys update instantly, even when you switch in Windows
+• Follows your devices: finds a device again after Windows renumbers it
+• Clean device list: hide unplugged devices and device types
 • Your icons and colors: headphones, speaker, earbuds or mic, in any color
-• Windows sound settings: open the classic Sound control panel or Sound in Windows Settings from a key, or from any key's settings
-• Nothing extra to install: runs inside Stream Deck, so Windows Smart App Control has no program to block
+• Sound settings keys: open the classic Sound control panel or Sound in Windows Settings
+• Nothing to install: runs inside Stream Deck, so Smart App Control can't block it
 
 Setup
 1. Drag "Toggle Audio Device" or "Set Audio Device" onto a key.
-2. Choose Output, Input or Both and the role, then pick your device (two for Toggle; Both adds an input to each output).
+2. Pick Output, Input or Both, then your device (two for Toggle).
 3. Optionally pick an icon and colors.
 
 Based on Fred Emmott's open-source Audio Switcher, with added features.
 
-Requirements: Windows 10 or later and Stream Deck 7.1 or later. Not available for macOS.
+Requirements: Windows 10+ and Stream Deck 7.1+. Not available for macOS.

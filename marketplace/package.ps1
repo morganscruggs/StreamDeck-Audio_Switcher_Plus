@@ -1,13 +1,14 @@
 # Packages the built plugins into this folder's listings as .streamDeckPlugin files: the Node plugin (the one on
-# the Marketplace) and the exe into full\, and the Node demo into demo\. It only packs what's already built, so
-# build first - see AGENTS.md and each project's README. Uses the Stream Deck CLI from audio-switcher-node's dev
-# dependencies (npm install there first). build-all.ps1 at the repo root builds all three and then runs this.
+# the Marketplace) into full\, the Node demo into demo\, and the exe (released on GitHub only) into exe\. It only
+# packs what's already built, so build first - see AGENTS.md and each project's README. Uses the Stream Deck CLI
+# from audio-switcher-node's dev dependencies (npm install there first). build-all.ps1 at the repo root builds all
+# three and then runs this.
 $root = Split-Path $PSScriptRoot -Parent
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) { $env:PATH = "C:\Program Files\nodejs;" + $env:PATH }
 
 $packages = @(
     @{ Folder = "com.morgan-scruggs.audioswitcherplus-node.sdPlugin"; Listing = "full" },
-    @{ Folder = "com.morganscruggs.audioswitcherplus.sdPlugin"; Listing = "full" },
+    @{ Folder = "com.morganscruggs.audioswitcherplus.sdPlugin"; Listing = "exe" },
     @{ Folder = "com.morgan-scruggs.audioswitcherplus-node-demo.sdPlugin"; Listing = "demo" }
 )
 

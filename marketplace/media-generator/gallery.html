@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <title>Audio Switcher Gallery</title>
 <!-- Source for the Marketplace gallery PNGs (1920x960) and the app icon (288x288). Render with render.ps1;
-     each slide is selected by URL hash (#thumbnail, the listing card; #1..#4, the gallery; #icon). Key images are the plugin's own icons from
+     each slide is selected by URL hash (#thumbnail, the listing card; #1..#6, the gallery; #icon). Key images are the plugin's own icons from
      shared/AudioDevicesIcons, recolored with a CSS mask the same way png-recolor.ts does (keep alpha, replace
      RGB). The settings panels are the real shared/propertyinspector/index.html, fed fake device data, so they
      stay true to the plugin when the PI changes. Device names are generic Windows ones, not real products.
      With ?demo, every slide gets a demo badge, the settings panels run as the demo, and the icon gets a DEMO
-     ribbon. Slides #2 and #4 are also animated, as 1920x1080 MP4s (the Marketplace's video size), by
+     ribbon. Slides #3 and #5 are also animated, as 1920x1080 MP4s (the Marketplace's video size), by
      animate.ps1 - see ANIMATIONS in the script. render.ps1 writes each listing's images and videos into its own
      folder, alongside its description: marketplace/full/ and marketplace/demo/. -->
 <style>
@@ -47,6 +47,8 @@
   .key i, .glyph { display: block; position: absolute; inset: 0; background: #fff;
     -webkit-mask: var(--icon) center / 100% 100% no-repeat; mask: var(--icon) center / 100% 100% no-repeat; }
   .key svg.alert { position: absolute; left: 22%; top: 20%; width: 56%; height: 56%; }
+  /* A key image as the plugin sends it, whole (the Sound keys). */
+  .key img { position: absolute; inset: 0; width: 100%; height: 100%; }
   /* The demo's switches-left counter, drawn as the plugin draws it on the key (apply-icon.ts). */
   .key b.count { position: absolute; left: 65.3%; top: 65.3%; width: 32%; height: 32%; border-radius: 50%; box-sizing: border-box;
     background: #ff3b30; border: calc(var(--k) * .021) solid #000; display: grid; place-items: center;
@@ -78,14 +80,14 @@
   .press { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 26px; color: var(--muted); }
   .press svg { width: 130px; height: 52px; }
 
-  /* ---- A note under a slide's keys, with color swatches (slide 2) ---- */
+  /* ---- A note under a slide's keys, with color swatches (slide 3) ---- */
   .color-note { display: flex; align-items: center; gap: 12px; margin-top: 56px; padding: 14px 28px 14px 22px; border-radius: 999px;
     background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.08); font-size: 25px; color: var(--muted); }
   .color-note b { color: var(--ink); font-weight: 600; }
   .color-note .sw { width: 22px; height: 22px; border-radius: 50%; flex: none; }
   .color-note .sw + span:not(.sw) { margin-left: 8px; }
 
-  /* ---- The two actions side by side (slide 1), each in a panel of its own, with "or" between ---- */
+  /* ---- The two actions side by side (slide 2), each in a panel of its own, with "or" between ---- */
   .modes { display: flex; align-items: stretch; gap: 36px; margin-top: 50px; }
   .mode { width: 760px; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 34px 40px 30px;
     border-radius: 24px; background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.08); }
@@ -129,6 +131,11 @@
   .ribbon { position: absolute; left: 34.42%; top: 76.90%; width: 100%; height: 15.03%; padding-bottom: 5.85px;
     transform: rotate(-45deg); background: var(--red); border: 3.5px solid #14161c; display: grid; place-items: center;
     color: #fff; font-size: 32px; font-weight: 700; line-height: 1; }
+
+  /* ---- The thumbnail's feature chips ---- */
+  .chips { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 46px; }
+  .chips span { padding: 14px 34px; border-radius: 999px; background: rgba(124,92,255,.2); border: 2px solid rgba(124,92,255,.55);
+    color: #e4ddff; font-size: 40px; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -158,8 +165,25 @@
   </div>
 </template>
 
-<!-- Thumbnail (the listing card): the active keys and the devices they make active, in Windows-style sound input/output cards. -->
-<section class="slide" id="sthumbnail" style="flex-direction:column; justify-content:center; gap:56px;">
+<!-- Thumbnail (the listing card): the name across the top, and under it a tagline and three features beside a tilted
+     deck of keys, an output and an input lit. The Marketplace only ever shows it small, so the name and tagline are
+     each scaled to fill their space (data-fit). -->
+<section class="slide" id="sthumbnail" style="flex-direction:column; justify-content:center; padding:0 100px;">
+  <div style="display:flex; align-items:center; gap:40px;">
+    <div data-appicon style="width:150px; height:150px; border-radius:34px;"></div>
+    <div style="flex:1; min-width:0;"><h1 data-fit style="display:inline-block; white-space:nowrap; font-size:100px; letter-spacing:-.025em; line-height:1;">Audio Switcher Plus<span class="demo-only demo-title"> Demo</span></h1></div>
+  </div>
+  <div style="display:flex; align-items:center; gap:80px; margin-top:56px;">
+    <div style="flex:1; min-width:0;">
+      <p class="lead" data-fit style="display:inline-block; white-space:nowrap; font-size:60px; margin-top:0; line-height:1.15; color:#c3c7d0;">Switch your Windows<br>audio devices</p>
+      <div class="chips"><span>Set or Toggle</span><span>Output, input or both</span><span>Live status</span></div>
+    </div>
+    <div class="deck" style="--cols:2; --k:160px; transform:perspective(1800px) rotateY(-16deg) rotateX(7deg);" data-keys='[["headphones","#3ddc84","hl"],["speaker","#606060"],["Earbuds","#606060"],["mic","#ff6b9a","hl"]]'></div>
+  </div>
+</section>
+
+<!-- 1. Overview (1.0's thumbnail): the active keys and the devices they make active, in Windows-style sound input/output cards. -->
+<section class="slide" id="s1" style="flex-direction:column; justify-content:center; gap:56px;">
   <div style="display:flex; align-items:center; gap:36px;">
     <div data-appicon style="width:120px; height:120px; border-radius:24px;"></div>
     <div>
@@ -187,10 +211,10 @@
   </div>
 </section>
 
-<!-- 1. The two actions: Set, a key for each device, or Toggle, one key flipping between two - shown set to Both, so
+<!-- 2. The two actions: Set, a key for each device, or Toggle, one key flipping between two - shown set to Both, so
      each side brings its mic along (in the accent color, as what Both adds). In the demo, the Toggle key's counter
      drops by one across the press. -->
-<section class="slide" id="s1" style="flex-direction:column; align-items:center; justify-content:center;">
+<section class="slide" id="s2" style="flex-direction:column; align-items:center; justify-content:center;">
   <span class="tag">Set or Toggle</span>
   <h2 style="text-align:center;">A key per device, or one key for two</h2>
   <p class="lead" style="text-align:center; margin-top:14px;">Give every device a key of its own, or flip between two with a single press.</p>
@@ -222,8 +246,8 @@
   </div>
 </section>
 
-<!-- 2. Live status (Set action) -->
-<section class="slide" id="s2" style="flex-direction:column; align-items:center; justify-content:center;">
+<!-- 3. Live status (Set action) -->
+<section class="slide" id="s3" style="flex-direction:column; align-items:center; justify-content:center;">
   <span class="tag">Live status</span>
   <h2 style="text-align:center;">Know what's active at a glance</h2>
   <p class="lead" style="text-align:center; margin-top:14px;">Keys update the moment the device changes, even when you switch it in Windows.</p>
@@ -241,9 +265,9 @@
   </div>
 </section>
 
-<!-- 3. Settings: Behavior and Devices sections of the real property inspector, for a Set key set to Both (a headset's
+<!-- 4. Settings: Behavior and Devices sections of the real property inspector, for a Set key set to Both (a headset's
      headphones and mic) -->
-<section class="slide" id="s3" style="align-items:center; gap:90px;">
+<section class="slide" id="s4" style="align-items:center; gap:90px;">
   <div class="pi" data-pi='{"action":"set","sections":[0,1],"maxHeight":800,"settings":{"direction":"both","role":"all","matchStrategy":"Fuzzy","primary":"out-hp","secondary":"in-hs","icon":"headphones","hideUnavailable":true,"hideDeviceType":false,"demoSwitchesUsed":3}}'></div>
   <div class="col">
     <span class="tag">Settings</span>
@@ -257,8 +281,8 @@
   </div>
 </section>
 
-<!-- 4. Icons & colors: the Set action's Device & icon section of the real property inspector -->
-<section class="slide" id="s4" style="flex-direction:column; align-items:center; justify-content:center;">
+<!-- 5. Icons & colors: the Set action's Device & icon section of the real property inspector -->
+<section class="slide" id="s5" style="flex-direction:column; align-items:center; justify-content:center;">
   <span class="tag">Icons &amp; colors</span>
   <h2 style="text-align:center;">Make every key yours</h2>
   <p class="lead" style="text-align:center; margin-top:14px;">Pick an icon for each device and color it. Set keys get their own On and Off colors.</p>
@@ -269,9 +293,37 @@
   </div>
 </section>
 
+<!-- 6. Sound settings: the Sound Control Panel and Sound Settings keys, drawn as the plugin draws them (with Windows'
+     own Sound icon), or the same two buttons in the real property inspector, which every Set and Toggle key has. -->
+<section class="slide" id="s6" style="flex-direction:column; align-items:center; justify-content:center;">
+  <span class="tag">Sound settings</span>
+  <h2 style="text-align:center;">Windows' sound settings, one press away</h2>
+  <p class="lead" style="text-align:center; margin-top:14px;">Open the classic Sound control panel, or Sound in Windows Settings.</p>
+  <div class="modes">
+    <div class="mode">
+      <span class="tag">Sound keys</span>
+      <h3>A key for each</h3>
+      <div style="display:flex; gap:56px;">
+        <div><div class="deck" style="--cols:1; --k:160px;" data-keys='[["sound-control-panel"]]'></div><div class="cap" style="color:var(--ink);">Sound Control Panel</div></div>
+        <div><div class="deck" style="--cols:1; --k:160px;" data-keys='[["sound-settings"]]'></div><div class="cap" style="color:var(--ink);">Sound Settings</div></div>
+      </div>
+      <p>Two new actions, for any key.</p>
+    </div>
+    <div class="or">or</div>
+    <div class="mode">
+      <span class="tag">In the settings</span>
+      <h3>A button for each</h3>
+      <div class="pi" style="margin:auto 0;" data-pi='{"action":"set","sections":[2],"zoom":1.75,"settings":{"direction":"output","role":"all","matchStrategy":"Fuzzy","primary":"out-hp","icon":"headphones","hideUnavailable":true,"hideDeviceType":false,"demoSwitchesUsed":3}}'></div>
+      <p style="margin-top:0;">In every Set and Toggle key's settings.</p>
+    </div>
+  </div>
+</section>
+
 <!-- App icon, rendered at 288x288 -->
 <section class="slide" id="sicon"><div data-appicon style="width:288px; height:288px;"></div></section>
 
+<!-- Windows' own Sound icon, for the Sound keys: render.ps1 reads it from Windows into this file. -->
+<script src="windows-sound.js"></script>
 <script>
   // ?demo renders the demo's listing: it badges every slide, runs the settings panels as the demo, and marks the icon.
   // ?video sizes the page for the animations.
@@ -281,14 +333,14 @@
   if (params.has("video")) document.documentElement.classList.add("video");
   const n = location.hash.slice(1) || "thumbnail";
 
-  // ---- Animations: slides #2 and #4 also come as looping videos (animate.ps1). Each is a list of frames - states of
+  // ---- Animations: slides #3 and #5 also come as looping videos (animate.ps1). Each is a list of frames - states of
   // the slide, each held for `ms` and then faded into the next over `fade` ms, the last into the first. ?frame=<i>
   // shows frame i in place of the still image, and ?timeline lists the frames' timings in the page's title. ----
   const FADE = 300;
   const TAP = 40;  // into and out of a pressed key: a cut, near enough
   const OFF = "#606060";
 
-  // #2: Set keys switching. The output moves between the headphones and the speakers and the mic comes on as their
+  // #3: Set keys switching. The output moves between the headphones and the speakers and the mic comes on as their
   // keys are pressed, the unplugged earbuds (in the demo, out of switches) alert when pressed, and the mic goes off
   // again when it's switched in Windows. In the demo, each press that switches uses one of that key's switches.
   function liveFrames() {
@@ -332,7 +384,7 @@
     });
   }
 
-  // #4: the key being set up (ringed) takes each icon and color picked in the panel, by turns, while each of the
+  // #5: the key being set up (ringed) takes each icon and color picked in the panel, by turns, while each of the
   // other keys changes to another look and back.
   function customFrames() {
     // [icon, On color, Off color]
@@ -362,7 +414,7 @@
     }));
   }
 
-  const ANIMATIONS = { 2: liveFrames, 4: customFrames };
+  const ANIMATIONS = { 3: liveFrames, 5: customFrames };
   if (ANIMATIONS[n]) {
     const frames = ANIMATIONS[n]();
     if (params.has("timeline")) document.title = JSON.stringify(frames.map(({ ms, fade }) => ({ ms, fade })));
@@ -373,6 +425,15 @@
   const PI = "../../shared/propertyinspector/index.html";
   const icon = (id) => `url(${ICONS}${id}.png)`;
 
+  // The Sound keys' images, built as the plugin builds them (keyImage() in sound-windows.ts): Windows' Sound icon,
+  // centred, or moved up and left for the Sound Settings key's gear. Empty if render.ps1 hasn't read the icon.
+  const SOUND = window.WINDOWS_SOUND ?? {};
+  const soundKey = (offset, overlay) => SOUND.icon ? "data:image/svg+xml;base64," + btoa(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144">`
+    + `<image x="${offset}" y="${offset}" width="96" height="96" href="data:image/png;base64,${SOUND.icon}"/>`
+    + (overlay ? `<image width="144" height="144" href="data:image/png;base64,${overlay}"/>` : "") + `</svg>`) : "";
+  const SOUND_KEYS = { "sound-control-panel": soundKey(24), "sound-settings": soundKey(14, SOUND.gear) };
+
   document.querySelectorAll("[data-appicon]").forEach((el) => {
     const tpl = document.getElementById("appicon").content.firstElementChild.cloneNode(true);
     tpl.style.cssText = el.getAttribute("style");
@@ -382,8 +443,9 @@
   // [icon, color, flag, count]: an empty color keeps the icon's own white, as the plugin does; "hl" rings the key;
   // "press" shows it pressed; "alert" shows the warning triangle in place of the image, as Stream Deck's
   // showAlert() does. An empty icon
-  // is an unused key. In the demo every key also shows its switches-left counter: `count`, or else one from a
-  // spread of plausible values.
+  // is an unused key; "sound-control-panel" and "sound-settings" are the Sound keys' own images. In the demo every
+  // device key also shows its switches-left counter: `count`, or else one from a spread of plausible values (the
+  // Sound keys have no limit, so no counter).
   const DEMO_COUNTS = [8, 6, 9, 3, 7, 5];
   let keyIndex = 0;
   document.querySelectorAll(".deck[data-keys]").forEach((deck) => {
@@ -391,8 +453,9 @@
       const key = document.createElement("div");
       key.className = "key" + ({ hl: " hl", press: " pressed" }[flag] ?? "");
       if (flag === "alert") key.innerHTML = `<svg class="alert"><use href="#alert"/></svg>`;
+      else if (id in SOUND_KEYS) key.innerHTML = `<img src="${SOUND_KEYS[id]}" alt="">`;
       else if (id) key.innerHTML = `<i style="--icon:${icon(id)}; ${color ? `background:${color}` : ""}"></i>`;
-      if (DEMO && (id || flag)) key.insertAdjacentHTML("beforeend", `<b class="count">${count ?? DEMO_COUNTS[keyIndex++ % DEMO_COUNTS.length]}</b>`);
+      if (DEMO && (id || flag) && !(id in SOUND_KEYS)) key.insertAdjacentHTML("beforeend", `<b class="count">${count ?? DEMO_COUNTS[keyIndex++ % DEMO_COUNTS.length]}</b>`);
       deck.appendChild(key);
     }
   });
@@ -438,6 +501,7 @@
         if (msg.event !== "sendToPlugin") return;
         if (msg.payload.event === "getIconList") reply("sendToPropertyInspector", { event: "getIconList", icons: ICON_LIST });
         if (msg.payload.event === "getDeviceList") reply("sendToPropertyInspector", { event: "getDeviceList", inputDevices: INPUTS, outputDevices: OUTPUTS });
+        if (msg.payload.event === "getSoundIcons") reply("sendToPropertyInspector", { event: "getSoundIcons", soundControlPanel: SOUND_KEYS["sound-control-panel"], soundSettings: SOUND_KEYS["sound-settings"] });
       },
     };
     setTimeout(() => sock.onopen());
@@ -470,8 +534,9 @@
       doc.querySelector("footer").style.display = "none";
       setTimeout(() => {
         const h = doc.getElementById("mainWrapper").getBoundingClientRect().bottom + 6;
-        // Scaled down only when the panel would otherwise run off its slide (cfg.maxHeight, in slide pixels).
-        const zoom = Math.min(PI_ZOOM, (cfg.maxHeight || Infinity) / h);
+        // Scaled by cfg.zoom if given, and down only when the panel would otherwise run off its slide (cfg.maxHeight,
+        // in slide pixels).
+        const zoom = Math.min(cfg.zoom || PI_ZOOM, (cfg.maxHeight || Infinity) / h);
         frame.style.transform = `scale(${zoom})`;
         frame.style.height = h + "px";
         box.style.width = PI_WIDTH * zoom + "px";
@@ -487,6 +552,12 @@
   }
 
   document.getElementById("s" + n).classList.add("on");
+
+  // Text that fills its space (the thumbnail's): an inline-block with data-fit is scaled until its widest line is as
+  // wide as its parent. Done once its slide is showing, so it can be measured.
+  document.querySelectorAll(".slide.on [data-fit]").forEach((el) => {
+    el.style.fontSize = parseFloat(getComputedStyle(el).fontSize) * el.parentElement.clientWidth / el.offsetWidth + "px";
+  });
 </script>
 </body>
 </html>

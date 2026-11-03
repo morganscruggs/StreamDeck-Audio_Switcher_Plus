@@ -1,4 +1,4 @@
-# Renders gallery.html's animated slides, #2 and #4, as looping MP4s, once per listing as render.ps1 does its images:
+# Renders gallery.html's animated slides, #3 and #5, as looping MP4s, once per listing as render.ps1 does its images:
 # gallery-<n>.mp4 beside gallery-<n>.png in ..\full\ and ..\demo\. Each frame of a slide's animation (see ANIMATIONS
 # in gallery.html) is screenshotted by headless Edge at 1920x1080, the Marketplace's video size, and ffmpeg holds each
 # one as long as the page's timeline says and cross-fades it into the next - the last back into the first, so the
@@ -29,7 +29,7 @@ foreach ($edition in @("full", "demo")) {
     # Clear out the old videos first, so a slide that's no longer animated doesn't leave its video behind.
     Remove-Item (Join-Path $dir "gallery-*.mp4") -ErrorAction SilentlyContinue
 
-    foreach ($n in @("2", "4")) {
+    foreach ($n in @("3", "5")) {
         # The frames' timings ([{ms, fade}, ...]), which the page puts in its title.
         $dom = & $edge --headless=new --disable-gpu --allow-file-access-from-files --virtual-time-budget=1000 `
             "--user-data-dir=$profileDir" --dump-dom "$uri$query&timeline#$n" 2>$null | Out-String
